@@ -5,3 +5,4 @@ pandas
 playsound==1.2.2
 requests
 googlesearch-python
+edge-tts

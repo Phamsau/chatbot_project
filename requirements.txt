@@ -2,7 +2,6 @@ Flask
 openai
 openpyxl
 pandas
-playsound
+playsound==1.2.2
 requests
-jinja2
 googlesearch-python

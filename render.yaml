@@ -2,8 +2,11 @@ services:
   - type: web
     name: chatbot-app
     env: python
-    region: oregon
+    pythonVersion: 3.11.4 # ✅ Dòng này rất quan trọng!
     buildCommand: pip install -r requirements.txt
     startCommand: python app_web.py
+    envVars:
+      - key: PORT
+        value: 10000
     plan: free
-    pythonVersion: 3.11.4
+    autoDeploy: true

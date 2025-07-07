@@ -3,10 +3,7 @@ services:
     name: chatbot-app
     env: python
     region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app_web.py
     plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python ./app_web.py"
-    autoDeploy: true
-    envVars:
-      - key: PORT
-        value: 10000
+    pythonVersion: 3.11.4

@@ -1,7 +1,8 @@
-flask
+Flask
 openai
-requests
-beautifulsoup4
-googlesearch-python
 openpyxl
 pandas
+playsound
+requests
+jinja2
+googlesearch-python

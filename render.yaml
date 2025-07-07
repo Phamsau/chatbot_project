@@ -1,10 +1,9 @@
 services:
   - type: web
-    name: chatbot-flask
+    name: chatbot-app
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
-    envVars:
-      - key: PORT
-        value: 10000
-services:  - type: web    name: chatbot-flask    env: python    buildCommand: pip install -r requirements.txt    startCommand: python app.py    envVars:      - key: PORT        value: 10000 
+    region: oregon # hoặc "frankfurt" nếu bạn ở châu Âu
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python app_web.py"
+    plan: free
+    autoDeploy: true

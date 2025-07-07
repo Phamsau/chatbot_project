@@ -2,8 +2,11 @@ services:
   - type: web
     name: chatbot-app
     env: python
-    region: oregon # hoặc "frankfurt" nếu bạn ở châu Âu
+    region: oregon
     buildCommand: "pip install -r requirements.txt"
     startCommand: "python app_web.py"
     plan: free
     autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 10000

@@ -9,8 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import time
-
-
+from underthesea import word_tokenize
 previous_answers = {}
 
 
@@ -43,84 +42,6 @@ def xuly_vanban_google(keyword, all_text):
     if start_index != len(all_text):
         all_text = all_text[start_index:]
     return all_text  # Trả về phần văn bản được lấy ra từ vị trí đầu tiên của từ khóa
-
-
-def search_google(keyword, num_of_results=10, max_sources=2, max_words=100):
-    try:
-        search_results = search(keyword, num_results=num_of_results, lang='vi')
-        all_paragraphs = []  # Danh sách để lưu trữ các đoạn văn từ tất cả các nguồn
-        sources_count = 0     # Đếm số lượng nguồn đã xử lý
-
-        for first_link in search_results:
-            if sources_count >= max_sources:
-                break  # Dừng lại nếu đã xử lý đủ số lượng nguồn
-
-            if first_link:
-                try:
-                    page = requests.get(first_link, verify=False)
-                    time.sleep(random.uniform(1, 3))
-
-                    soup = BeautifulSoup(page.content, 'html.parser')
-
-                    # Loại bỏ các thẻ không mong muốn
-                    for tag in soup(['script', 'style', 'footer', 'header', 'nav', 'aside', 'address']):
-                        tag.extract()
-
-                    paragraphs = [paragraph.get_text()
-                                  for paragraph in soup.find_all('p')]
-
-                    # Thêm các đoạn văn của mỗi nguồn vào danh sách chung
-                    all_paragraphs.extend(paragraphs)
-                    sources_count += 1  # Tăng số lượng nguồn đã xử lý
-
-                except requests.RequestException as e:
-                    print(f"Không thể truy cập trang {first_link}: {e}")
-
-        if not all_paragraphs:
-            return "Sorry, không tìm thấy kết quả phù hợp", "Sorry, không tìm thấy kết quả phù hợp"
-
-        # Kết hợp tất cả các đoạn văn từ các nguồn lại với nhau
-        all_text = '\n'.join(filter(None, all_paragraphs))
-
-        # Các bước làm sạch văn bản
-        all_text = re.sub(
-            r'Hãy xác nhận rằng quý vị là chuyên gia chăm sóc sức khỏe|Liên kết bạn vừa chọn sẽ đưa bạn tới trang web của một bên thứ ba\. Chúng tôi không kiểm soát hay có trách nhiệm đối với nội dung trang web của bất kỳ bên thứ ba nào\. Nhập cụm từ tìm kiếm để tìm các chủ đề, nội dung đa phương tiện và nhiều nội dung khác về y tế có liên quan\.',
-            '',
-            all_text
-        )
-        all_text = re.sub(r'\(.*?\)|\[.*?\]|\|.*?\||[_*|()]', '', all_text)
-        all_text = xuly_vanban_google(keyword, all_text)
-        # The code is replacing all occurrences of newline characters ("\n") in the variable
-        # `all_text` with a space character.
-        k = all_text.replace("\n", " ")
-        # print(len(k))
-
-        if k.strip():
-            luu_ngu_canh(keyword, k)
-
-        # Giới hạn số từ trích xuất nếu vượt quá `max_words`
-        words = all_text.split()
-        if len(words) > max_words:
-            words = words[:max_words]
-            all_text = ' '.join(words)
-
-        # Xóa các đoạn văn bản không mong muốn
-        text_to_remove = (
-            r'Liên kết bạn vừa chọn sẽ đưa bạn tới trang web của một bên thứ ba\. '
-            r'Chúng tôi không kiểm soát hay có trách nhiệm đối với nội dung trang web của bất kỳ bên thứ ba nào\. '
-            r'Nhập cụm từ tìm kiếm để tìm các chủ đề, nội dung đa phương tiện và nhiều nội dung khác về y tế có liên quan\.'
-            r' • Sử dụng "" để tìm cả cụm chính xác o • Sử dụng – để loại bỏ kết quả chứa cụm từ nhất định o'
-            r' • Sử dụng OR để cho biết cụm từ thay thế o Theo , MD, Sidney Kimmel Medical College at Thomas Jefferson University'
-        )
-        all_text = re.sub(text_to_remove, '', all_text)
-
-        if all_text.strip():
-            return all_text, k
-        else:
-            all_text = k1 = "Sorry, không tìm thấy kết quả phù hợp"
-    except Exception as e:
-        all_text = k = f"Sorry, đã xảy ra lỗi: {str(e)}"
-    return all_text, k
 
 
 def search_google_1(keyword, num_of_results=10, max_sources=2, max_words=100):
@@ -158,7 +79,8 @@ def search_google_1(keyword, num_of_results=10, max_sources=2, max_words=100):
                 sources_count += 1
 
             except requests.RequestException as e:
-                print(f"Không thể truy cập trang {first_link}: {e}")
+                # print(f"Không thể truy cập trang {first_link}: {e}")
+                pass
 
         if not all_paragraphs:
             return "Sorry, không tìm thấy kết quả phù hợp", "Sorry, không tìm thấy kết quả phù hợp"
@@ -184,22 +106,28 @@ def search_google_1(keyword, num_of_results=10, max_sources=2, max_words=100):
             pass  # Nếu không có hàm này thì bỏ qua
 
         # Backup version xoá \n thành space
-        k = all_text.replace("\n", " ")
+        text = all_text.replace("\n", " ")
 
-        if k.strip():
+        if text.strip():
             try:
-                luu_ngu_canh(keyword, k)
+                luu_ngu_canh(keyword, text)
             except:
                 pass
-
         # Giới hạn số từ
         words = all_text.split()
         if len(words) > max_words:
-            words = words[:max_words]
-            all_text = ' '.join(words)
-
+            extended_words = words[:max_words]
+            # Tiếp tục thêm từ cho đến khi gặp dấu chấm
+            for word in words[max_words:]:
+                extended_words.append(word)
+                if word.endswith('.'):
+                    break
+            doan_dau = ' '.join(extended_words)
+            # print(doan_dau)
+        else:
+            doan_dau = all_text
         if all_text.strip():
-            return all_text, k
+            return doan_dau, text
         else:
             return "Sorry, không tìm thấy kết quả phù hợp", "Sorry, không tìm thấy kết quả phù hợp"
 
@@ -207,101 +135,95 @@ def search_google_1(keyword, num_of_results=10, max_sources=2, max_words=100):
         return f"Sorry, đã xảy ra lỗi: {str(e)}", f"Sorry, đã xảy ra lỗi: {str(e)}"
 
 
-def search_google_2(keyword, num_of_results=10, max_sources=2, max_words=100):
-    try:
-        search_results = search(keyword, num_results=num_of_results, lang='vi')
-        all_paragraphs = []
-        sources_count = 0
+# Stopwords để loại bỏ từ khóa nhiễu
+STOPWORDS = {
+    "gì", "nào", "ai", "sao", "à", "và", "là", "các", "của",
+    "ấy", "thì", "ở", "đâu", "vì", "ra", "nó", "nhưng", "những", "hả", "sẽ", "mấy"
+}
+# Bộ mở rộng từ khóa theo loại câu hỏi
+BO_TU_MO_RONG = {
+    "ai": ["ai", "người", "tên", "gọi là", "ông", "bà", "cô", "chú"],
+    "trong": ["ngoài", "trên", "dưới", "trong"],
+    "đó là gì": ["đó là", "gọi là", "được xem là", "có nghĩa là", "định nghĩa"],
+    "ở đâu": ["ở", "tại", "nơi", "địa điểm", "quê", "xuất thân"],
+    "khi nào": ["khi", "năm", "tháng", "ngày", "lúc", "thời gian", "thời điểm"],
+    "vì sao": ["vì", "do", "tại sao", "bởi vì", "nguyên nhân", "lý do"],
+    "như thế nào": ["như", "cách", "ra sao", "mô tả", "kiểu", "dạng", "đặc điểm"],
+    "bao nhiêu": ["bao nhiêu", "số", "mấy", "tổng", "khoảng"],
+    "đang làm gì": ["đang làm", "hành động", "thực hiện", "công việc"],
+    "phu nhân": ["phu nhân", "vợ", "bà xã"],
+    "chồng": ["chồng", "ông xã", "phu quân"],
+    "triều đình": ["triều đình", "vua quan", "hoàng vương", "vua chúa", "hoàng triều"],
+    "ông": ["ông", "cụ", "ngài", "lão"],
+    "bà": ["bà", "cô", "mợ", "thím", "chị", "dì"],
+    "đình": ["đình", "đền", "miếu", "chùa", "nơi thờ"],
+    "quan": ["quan", "quan lại", "quan chức", "chức tước", "viên chức"]
+}
 
-        for first_link in search_results:
-            if sources_count >= max_sources:
-                break
-            if not first_link:
-                continue
 
-            try:
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-                }
-                response = requests.get(
-                    first_link, timeout=10, headers=headers, verify=False)
-                time.sleep(random.uniform(1, 3))
+def tach_tu_khoa(text):
+    """Tách từ từ văn bản và loại bỏ stopwords."""
+    words = text.split()
+    keywords = [
+        word.lower().rstrip(".,?!")
+        for word in words
+        if word.lower().rstrip(".,?!") not in STOPWORDS
+    ]
+    return keywords if keywords else [
+        word.lower().rstrip(".,?!") for word in words
+    ]
 
-                soup = BeautifulSoup(response.content, 'html.parser')
 
-                # Xóa các thẻ không cần thiết
-                for tag in soup(['script', 'style', 'footer', 'header', 'nav', 'aside', 'address', 'noscript', 'form']):
-                    tag.decompose()
+def expand_keywords(base_keywords, question):
+    """Mở rộng từ khóa từ câu hỏi và tách cụm từ thành từ đơn."""
+    priority_keywords = []
+    for key, vals in BO_TU_MO_RONG.items():
+        if key in question.lower():
+            priority_keywords.extend(vals)
 
-                # Lấy các đoạn văn bản và lọc rác
-                paragraphs = [
-                    p.get_text(separator=" ", strip=True)
-                    for p in soup.find_all('p')
-                    if len(p.get_text(strip=True)) > 20 and not re.search(r'cookie|chính sách|quảng cáo|bản quyền|đăng nhập|http', p.get_text().lower())
-                ]
+    # Tách cụm từ thành từ đơn
+    tu_don_tu_cum = []
+    for cum in priority_keywords:
+        tu_don_tu_cum.extend(cum.lower().split())
 
-                # Nếu nội dung có đủ giá trị, thêm vào
-                if sum(len(p.split()) for p in paragraphs) >= 30:
-                    all_paragraphs.extend(paragraphs)
-                    sources_count += 1
+    # Gộp và loại trùng
+    return list(set([kw.lower() for kw in base_keywords] + tu_don_tu_cum))
 
-            except requests.RequestException as e:
-                print(f"Không thể truy cập trang {first_link}: {e}")
 
-        if not all_paragraphs:
-            return "Không tìm thấy nội dung phù hợp.", "Không tìm thấy nội dung phù hợp."
+def xuli_doanvan_ngu_canh(user_input):
+    user_keywords = tach_tu_khoa(user_input)
+    max_similarity_percentage = 0
+    # Danh sách để lưu trữ tất cả các đoạn văn bản có tỷ lệ tương đồng cao nhất
+    max_similar_answers = []
 
-        # Kết hợp văn bản
-        all_text = '\n'.join(filter(None, all_paragraphs))
+    for previous_question, previous_answer in previous_answers.items():
+        previous_answer_paragraphs = previous_answer.split('\n')
 
-        # Làm sạch văn bản
-        all_text = re.sub(r'\s+', ' ', all_text)
-        all_text = re.sub(r'\s+([.,;!?])', r'\1', all_text)
-        all_text = re.sub(r'([.,!?])([^\s])', r'\1 \2', all_text)
+        for paragraph in previous_answer_paragraphs:
+            previous_keywords = tach_tu_khoa(paragraph)
+            common_keywords = set(user_keywords) & set(previous_keywords)
+            similarity_percentage = len(common_keywords) / len(user_keywords)
+            if similarity_percentage >= max_similarity_percentage:
+                if similarity_percentage > max_similarity_percentage:
+                    # Nếu có tỷ lệ tương đồng mới lớn hơn, cập nhật danh sách và tỷ lệ tương đồng
+                    max_similarity_percentage = similarity_percentage
+                    max_similar_answers = [paragraph]
 
-        # Loại bỏ các mẫu rác
-        patterns_to_remove = [
-            r'Hãy xác nhận rằng.*?chăm sóc sức khỏe',
-            r'Liên kết bạn vừa chọn.*?liên quan\.',
-            r'Trình duyệt của bạn.*?không hỗ trợ',
-            r'Truy cập trang web chính thức.*?',
-            r'This site uses cookies.*?',
-            r'Chúng tôi sử dụng cookie.*?',
-            r'\(.*?\)', r'\[.*?\]', r'\|.*?\|', r'[_*|()]'
-        ]
-        for pattern in patterns_to_remove:
-            all_text = re.sub(pattern, '', all_text, flags=re.DOTALL)
+                else:
+                    # Nếu tỷ lệ tương đồng bằng, thêm vào danh sách
+                    max_similar_answers.append(paragraph)
 
-        # Viết hoa đầu câu, chuẩn hóa chấm câu
-        sentences = re.split(r'(?<=[.!?])\s+', all_text)
-        sentences = [s.strip().capitalize() for s in sentences if s.strip()]
-        all_text = '. '.join(sentences)
+    if max_similarity_percentage >= 0.55:
+        # print("kết quả: " ' '.join(max_similar_answers))
+        return ' '.join(max_similar_answers)
+    else:
+        return None
 
-        # Xử lý bằng hàm ngoài nếu có
-        try:
-            all_text = xuly_vanban_google(keyword, all_text)
-        except:
-            pass
 
-        # Bản không chứa dấu xuống dòng
-        k = all_text.replace("\n", " ")
-
-        # Lưu nếu cần
-        try:
-            if k.strip():
-                luu_ngu_canh(keyword, k)
-        except:
-            pass
-
-        # Giới hạn số từ
-        words = all_text.split()
-        if len(words) > max_words:
-            all_text = ' '.join(words[:max_words])
-
-        return all_text, k
-
-    except Exception as e:
-        return f"Đã xảy ra lỗi: {str(e)}", f"Đã xảy ra lỗi: {str(e)}"
+def capitalize_first_letter(paragraph):
+    if len(paragraph) > 0:
+        return paragraph[0].upper() + paragraph[1:]
+    return paragraph
 
 
 def similar(a, b):
@@ -318,6 +240,271 @@ def find_keyword_positions2(text, keywords):
             positions.append(match.start())
     # print(positions)
     return sorted(positions)
+
+
+def traloi_theo_ngucanh2(question, text, k=0.75):  # DÙNG CHO VĂN BẢN NHỎ
+    """
+    Trả lời câu hỏi từ đoạn văn bản dựa trên từ khóa mở rộng và ngữ cảnh câu.
+    - question: câu hỏi
+    - text: đoạn văn bản
+    - k: ngưỡng tương đồng để gộp câu trùng lặp
+    """
+    base_keywords = tach_tu_khoa(question)
+    keywords = expand_keywords(base_keywords, question)
+
+    print(keywords)
+    keyword_related_answers = {}
+    y = (len(keywords)//11) + 1
+    z = len(base_keywords) + len(base_keywords)//2
+    print(y, z)
+
+    # Tìm tất cả các vị trí từ khóa trong văn bản
+    keyword_positions = find_keyword_positions2(text, keywords)
+
+    for start_index in keyword_positions:
+        # Tìm vị trí đầu câu (trước dấu chấm, dấu chấm than, dấu hỏi)
+        sentence_start_index = max(
+            text.rfind('.', 0, start_index),
+            text.rfind('!', 0, start_index),
+            text.rfind('?', 0, start_index)
+        ) + 1
+        temp_index = start_index
+        while True:
+            end_index = text.find(".", temp_index)
+            if end_index == -1:
+                break
+            if end_index + 1 < len(text) and text[end_index + 1] in [' ', '\n']:
+                break
+            else:
+                temp_index = end_index + 1
+        if end_index != -1:
+            related_answer = text[start_index:end_index + 1]
+            related_answer1 = text[sentence_start_index:end_index + 1]
+        else:
+            related_answer = text[start_index:]
+            related_answer1 = text[sentence_start_index:]
+        words_in_related_answer = related_answer.lower().replace(
+            ",", " ").rstrip(',.?!').split()
+
+        count = sum(
+            1 for word in words_in_related_answer[:z] if word in keywords)
+        # Tính mật độ từ khóa trong đoạn từ từ khóa đầu đến cuối
+        keyword_indices = [i for i, word in enumerate(
+            words_in_related_answer) if word in keywords]
+        if keyword_indices:
+            keyword_span = keyword_indices[-1] - keyword_indices[0] + 1
+            keyword_density = count / keyword_span if keyword_span > 0 else 0
+        else:
+            keyword_density = 0
+        # Chỉ lưu câu trả lời nếu count > 1
+        if count > y and keyword_density >= 0.1:
+            related_answer1 = random.choice([related_answer1,
+                                            related_answer])
+            for keyword in keywords:
+                if keyword in keyword_related_answers:
+                    keyword_related_answers[keyword].append(
+                        (related_answer1, count))
+                else:
+                    keyword_related_answers[keyword] = [
+                        (related_answer1, count)]
+
+    max_matched_keywords = 0
+    best_related_answers = []
+
+    for keyword, related_answers in keyword_related_answers.items():
+        for related_answer, count in related_answers:
+            if count > max_matched_keywords:
+                max_matched_keywords = count
+                best_related_answers = [related_answer]
+
+            elif count == max_matched_keywords:
+                best_related_answers.append(related_answer)
+
+    # Lọc bỏ các câu tương tự nhau và chọn ngẫu nhiên một câu từ các câu tương tự
+    groups = []
+    for answer in best_related_answers:
+        found_group = False
+
+        for group in groups:
+            if similar(answer, group[0]) > k:
+                group.append(answer)
+                found_group = True
+                break
+
+        if not found_group:
+            groups.append([answer])
+
+    # Chọn ngẫu nhiên 1 câu từ mỗi nhóm
+    selected_answers = [capitalize_first_letter(
+        random.choice(group)) for group in groups]
+    # Xáo trộn thứ tự các câu trước khi nối chúng lại
+    random.shuffle(selected_answers)
+    if selected_answers:
+        return ' '.join(selected_answers)
+        # return restructure_response_v2(selected_answers)
+        # return restructure_response_v2_1(selected_answers, keywords)
+    return None
+
+
+# DÙNG CHO VĂN BẢN LỚN
+def traloi_theo_ngucanh1(user_input, text, similarity_threshold=0.75):
+    keywords = tach_tu_khoa(user_input)
+    y = (len(keywords) // 6) + 1
+
+    def find_positions(text, delimiters):
+        positions = []
+        for delimiter in delimiters:
+            for match in re.finditer(re.escape(delimiter), text):
+                if (match.end() < len(text) and text[match.end()].isspace()) or (match.end() == len(text)):
+                    if not re.match(r'\d', text[match.start() - 1:match.start()]):
+                        positions.append((match.start(), delimiter))
+        return positions
+
+    def find_keyword_positions(text, keywords):
+        # Tạo biểu thức chính quy kết hợp tất cả các từ khóa
+        # re.escape() được sử dụng để xử lý các ký tự đặc biệt trong từ khóa
+        regex_pattern = r'\b(?:' + '|'.join(re.escape(keyword)
+                                            for keyword in keywords) + r')\b'
+
+        # Sử dụng re.finditer để tìm tất cả các vị trí của từ khóa trong văn bản
+        positions = [(match.start(), match.group())
+                     for match in re.finditer(regex_pattern, text, re.IGNORECASE)]
+
+        return positions
+
+    try:
+        delimiters = ['.', '!', '?']
+        delimiter_positions = find_positions(text, delimiters)
+        keyword_positions = find_keyword_positions(text, keywords)
+        all_positions = delimiter_positions + keyword_positions
+        all_positions.sort()
+
+        best_related_answers = []
+        segment_start = 0
+
+        for pos, type in all_positions:
+            if type in delimiters:
+                segment = text[segment_start:pos + 1].strip()
+                keyword_count = sum(keyword.lower() in re.findall(
+                    r'\b\w+\b', segment.lower()) for keyword in keywords)
+
+                # Tính toán khoảng cách trung bình giữa các từ khóa
+                keyword_positions_in_segment = [
+                    match.start() for keyword in keywords for match in re.finditer(r'\b{}\b'.format(re.escape(keyword)), segment.lower())
+                ]
+                if len(keyword_positions_in_segment) > 1:
+                    avg_distance = sum(
+                        abs(keyword_positions_in_segment[i] -
+                            keyword_positions_in_segment[i - 1])
+                        for i in range(1, len(keyword_positions_in_segment))
+                    ) / (len(keyword_positions_in_segment) - 1)
+                else:
+                    # Nếu chỉ có 1 từ khóa, đặt khoảng cách vô cùng lớn
+                    avg_distance = float('inf')
+
+                # Chỉ thêm đoạn vào danh sách nếu khoảng cách trung bình nhỏ hơn ngưỡng
+                if keyword_count > y and avg_distance < keyword_count*5:  # Đặt ngưỡng khoảng cách hợp lý
+                    best_related_answers.append(
+                        (segment, keyword_count, avg_distance))
+                segment_start = pos + 1
+
+                # print("kết quả đầu:  ", best_related_answers)
+         # xử lý đoạn văn cuối cùng
+        if segment_start < len(text):
+            segment = text[segment_start:].strip()
+            keyword_count = sum(keyword.lower() in re.findall(
+                r'\b\w+\b', segment.lower()) for keyword in keywords)
+            if keyword_count > y:
+                best_related_answers.append(
+                    (segment, keyword_count, avg_distance))
+        # print("kết quả cuối:  ", best_related_answers)
+        max_matched_keywords = 0
+        filtered_answers = []
+        for answer, count, avg_distance in best_related_answers:
+            if count > max_matched_keywords:
+                max_matched_keywords = count
+                filtered_answers = [answer]
+            elif count == max_matched_keywords:
+                filtered_answers.append(answer)
+
+        groups = []
+        for answer in filtered_answers:
+            found_group = False
+            for group in groups:
+                if similar(answer, group[0]) > similarity_threshold:
+                    group.append(answer)
+                    found_group = True
+                    break
+            if not found_group:
+                groups.append([answer])
+
+        selected_answers = [random.choice(group) for group in groups]
+        # random.shuffle(selected_answers)
+
+        if selected_answers:
+            return ' '.join(selected_answers)
+            # return restructure_response_v2(selected_answers)
+            # return restructure_response_v2_1(selected_answers, keywords)
+
+    except Exception as e:
+        print(f"Lỗi xảy ra: {e}")
+    return None
+
+
+# DÙNG CHO VĂN BẢN LỚN
+def traloi_theo_ngucanh1a(keywords, text, similarity_threshold=0.75, max_sentences=5):
+    if not keywords or not text:
+        return None  # Xử lý đầu vào rỗng
+
+    y = (len(keywords) // 6) + 1  # Ngưỡng tối thiểu để chọn câu
+    delimiters = ['.', '!', '?']  # Các dấu câu ngắt câu
+
+    def split_sentences(text):
+        """Tách văn bản thành từng câu dựa trên dấu ngắt câu"""
+        sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+        return [s.strip() for s in sentences if s]
+
+    def find_keyword_positions(sentences, keywords):
+        """Xác định câu nào chứa từ khóa"""
+        keyword_counts = []
+        for sentence in sentences:
+            words = set(re.findall(r'\b\w+\b', sentence.lower()))
+            count = sum(kw.lower() in words for kw in keywords)
+            keyword_counts.append((sentence, count))
+        return keyword_counts
+
+    def compute_tfidf(sentences, keywords):
+        """Tính toán mức độ quan trọng của câu bằng TF-IDF"""
+        vectorizer = TfidfVectorizer(stop_words='english')
+        tfidf_matrix = vectorizer.fit_transform(sentences + keywords)
+        scores = np.mean(tfidf_matrix[:-len(keywords)].toarray(), axis=1)
+        return scores
+
+    try:
+        sentences = split_sentences(text)
+        keyword_positions = find_keyword_positions(sentences, keywords)
+
+        # Lọc câu có chứa nhiều từ khóa nhất
+        max_keyword_count = max(
+            (count for _, count in keyword_positions), default=0)
+        filtered_sentences = [
+            s for s, count in keyword_positions if count == max_keyword_count]
+
+        # Tính TF-IDF để chọn câu quan trọng nhất
+        if filtered_sentences:
+            tfidf_scores = compute_tfidf(filtered_sentences, keywords)
+            ranked_sentences = sorted(
+                zip(filtered_sentences, tfidf_scores), key=lambda x: x[1], reverse=True)
+            selected_sentences = [
+                s for s, _ in ranked_sentences[:max_sentences]]
+        else:
+            selected_sentences = []
+
+        return ' '.join(selected_sentences) if selected_sentences else None
+
+    except Exception as e:
+        print(f"Lỗi xảy ra: {e}")
+        return None
 
 
 def restructure_response_v2(selected_answers):
@@ -419,395 +606,3 @@ def restructure_response_v2_1(selected_answers, keywords=None):
         else:
             bullets = "\n".join([f"- {s}." for s in selected_answers])
             return f"{generate_intro(keywords)}\n{bullets}"
-
-
-def traloi_theo_ngucanh2(keywords, text, k=0.75):
-    keyword_related_answers = {}
-    y = (len(keywords)//6) + 1
-    z = len(keywords) + len(keywords)//2
-
-    # Tìm tất cả các vị trí từ khóa trong văn bản
-    keyword_positions = find_keyword_positions2(text, keywords)
-
-    for start_index in keyword_positions:
-        # Tìm vị trí đầu câu (trước dấu chấm, dấu chấm than, dấu hỏi)
-        sentence_start_index = max(
-            text.rfind('.', 0, start_index),
-            text.rfind('!', 0, start_index),
-            text.rfind('?', 0, start_index)
-        ) + 1
-        temp_index = start_index
-        while True:
-            end_index = text.find(".", temp_index)
-            if end_index == -1:
-                break
-            if end_index + 1 < len(text) and text[end_index + 1] in [' ', '\n']:
-                break
-            else:
-                temp_index = end_index + 1
-        if end_index != -1:
-            related_answer = text[start_index:end_index + 1]
-            related_answer1 = text[sentence_start_index:end_index + 1]
-        else:
-            related_answer = text[start_index:]
-            related_answer1 = text[sentence_start_index:]
-
-        words_in_related_answer = related_answer.lower().replace(
-            ",", " ").rstrip(',.?!').split()
-
-        count = sum(
-            1 for word in words_in_related_answer[:z] if word in keywords)
-        # Chỉ lưu câu trả lời nếu count > 1
-        if count > y:
-            related_answer1 = random.choice([related_answer1,
-                                            related_answer])
-            for keyword in keywords:
-                if keyword in keyword_related_answers:
-                    keyword_related_answers[keyword].append(
-                        (related_answer1, count))
-                else:
-                    keyword_related_answers[keyword] = [
-                        (related_answer1, count)]
-
-    max_matched_keywords = 0
-    best_related_answers = []
-
-    for keyword, related_answers in keyword_related_answers.items():
-        for related_answer, count in related_answers:
-            if count > max_matched_keywords:
-                max_matched_keywords = count
-                best_related_answers = [related_answer]
-
-            elif count == max_matched_keywords:
-                best_related_answers.append(related_answer)
-
-    # Lọc bỏ các câu tương tự nhau và chọn ngẫu nhiên một câu từ các câu tương tự
-    groups = []
-    for answer in best_related_answers:
-        found_group = False
-
-        for group in groups:
-            if similar(answer, group[0]) > k:
-                group.append(answer)
-                found_group = True
-                break
-
-        if not found_group:
-            groups.append([answer])
-
-    # Chọn ngẫu nhiên 1 câu từ mỗi nhóm
-    selected_answers = [capitalize_first_letter(
-        random.choice(group)) for group in groups]
-    # Xáo trộn thứ tự các câu trước khi nối chúng lại
-    random.shuffle(selected_answers)
-    if selected_answers:
-        # return ' '.join(selected_answers)
-        return restructure_response_v2(selected_answers)
-        # return restructure_response_v2_1(selected_answers, keywords)
-    return None
-
-
-def traloi_theo_ngucanh1(keywords, text, similarity_threshold=0.75):
-
-    y = (len(keywords) // 6) + 1
-
-    def find_positions(text, delimiters):
-        positions = []
-        for delimiter in delimiters:
-            for match in re.finditer(re.escape(delimiter), text):
-                if (match.end() < len(text) and text[match.end()].isspace()) or (match.end() == len(text)):
-                    if not re.match(r'\d', text[match.start() - 1:match.start()]):
-                        positions.append((match.start(), delimiter))
-        return positions
-
-    def find_keyword_positions(text, keywords):
-        # Tạo biểu thức chính quy kết hợp tất cả các từ khóa
-        # re.escape() được sử dụng để xử lý các ký tự đặc biệt trong từ khóa
-        regex_pattern = r'\b(?:' + '|'.join(re.escape(keyword)
-                                            for keyword in keywords) + r')\b'
-
-        # Sử dụng re.finditer để tìm tất cả các vị trí của từ khóa trong văn bản
-        positions = [(match.start(), match.group())
-                     for match in re.finditer(regex_pattern, text, re.IGNORECASE)]
-
-        return positions
-
-    try:
-        delimiters = ['.', '!', '?']
-        delimiter_positions = find_positions(text, delimiters)
-        keyword_positions = find_keyword_positions(text, keywords)
-        all_positions = delimiter_positions + keyword_positions
-        all_positions.sort()
-
-        best_related_answers = []
-        segment_start = 0
-
-        for pos, type in all_positions:
-            if type in delimiters:
-                segment = text[segment_start:pos + 1].strip()
-                keyword_count = sum(keyword.lower() in re.findall(
-                    r'\b\w+\b', segment.lower()) for keyword in keywords)
-
-                # Tính toán khoảng cách trung bình giữa các từ khóa
-                keyword_positions_in_segment = [
-                    match.start() for keyword in keywords for match in re.finditer(r'\b{}\b'.format(re.escape(keyword)), segment.lower())
-                ]
-                if len(keyword_positions_in_segment) > 1:
-                    avg_distance = sum(
-                        abs(keyword_positions_in_segment[i] -
-                            keyword_positions_in_segment[i - 1])
-                        for i in range(1, len(keyword_positions_in_segment))
-                    ) / (len(keyword_positions_in_segment) - 1)
-                else:
-                    # Nếu chỉ có 1 từ khóa, đặt khoảng cách vô cùng lớn
-                    avg_distance = float('inf')
-
-                # Chỉ thêm đoạn vào danh sách nếu khoảng cách trung bình nhỏ hơn ngưỡng
-                if keyword_count > y and avg_distance < keyword_count*5:  # Đặt ngưỡng khoảng cách hợp lý
-                    best_related_answers.append(
-                        (segment, keyword_count, avg_distance))
-                segment_start = pos + 1
-
-                # print("kết quả đầu:  ", best_related_answers)
-         # xử lý đoạn văn cuối cùng
-        if segment_start < len(text):
-            segment = text[segment_start:].strip()
-            keyword_count = sum(keyword.lower() in re.findall(
-                r'\b\w+\b', segment.lower()) for keyword in keywords)
-            if keyword_count > y:
-                best_related_answers.append(
-                    (segment, keyword_count, avg_distance))
-        # print("kết quả cuối:  ", best_related_answers)
-        max_matched_keywords = 0
-        filtered_answers = []
-        for answer, count, avg_distance in best_related_answers:
-            if count > max_matched_keywords:
-                max_matched_keywords = count
-                filtered_answers = [answer]
-            elif count == max_matched_keywords:
-                filtered_answers.append(answer)
-
-        groups = []
-        for answer in filtered_answers:
-            found_group = False
-            for group in groups:
-                if similar(answer, group[0]) > similarity_threshold:
-                    group.append(answer)
-                    found_group = True
-                    break
-            if not found_group:
-                groups.append([answer])
-
-        selected_answers = [random.choice(group) for group in groups]
-        # random.shuffle(selected_answers)
-
-        if selected_answers:
-            # return ' '.join(selected_answers)
-            return restructure_response_v2(selected_answers)
-            # return restructure_response_v2_1(selected_answers, keywords)
-
-    except Exception as e:
-        print(f"Lỗi xảy ra: {e}")
-    return None
-
-
-def traloi_theo_ngucanh1b(keywords, text, similarity_threshold=0.75, max_sentences=5):
-    if not keywords or not text:
-        return None  # Xử lý đầu vào rỗng
-
-    y = (len(keywords) // 6) + 1
-
-    def find_positions(text, delimiters):
-        positions = []
-        for delimiter in delimiters:
-            for match in re.finditer(re.escape(delimiter), text):
-                if match.end() == len(text) or text[match.end()].isspace():
-                    if match.start() > 0 and not re.match(r'\d', text[match.start() - 1]):
-                        positions.append((match.start(), delimiter))
-        return positions
-
-    def find_keyword_positions(text, keywords):
-        regex_pattern = r'\b(?:' + '|'.join(map(re.escape, keywords)) + r')\b'
-        return [(match.start(), match.group()) for match in re.finditer(regex_pattern, text, re.IGNORECASE)]
-
-    try:
-        delimiters = ['.', '!', '?']
-        delimiter_positions = find_positions(text, delimiters)
-        keyword_positions = find_keyword_positions(text, keywords)
-
-        all_positions = sorted(delimiter_positions + keyword_positions)
-        best_related_answers = []
-        segment_start = 0
-
-        for pos, typ in all_positions:
-            if typ in delimiters:
-                segment = text[segment_start:pos + 1].strip()
-                words_in_segment = set(re.findall(r'\b\w+\b', segment.lower()))
-                keyword_count = sum(
-                    kw.lower() in words_in_segment for kw in keywords)
-
-                keyword_positions_in_segment = [
-                    match.start() for kw in keywords
-                    for match in re.finditer(r'\b{}\b'.format(re.escape(kw)), segment.lower())
-                ]
-
-                avg_distance = (
-                    sum(abs(keyword_positions_in_segment[i] - keyword_positions_in_segment[i - 1])
-                        for i in range(1, len(keyword_positions_in_segment))) / (len(keyword_positions_in_segment) - 1)
-                ) if len(keyword_positions_in_segment) > 1 else float('inf')
-
-                if keyword_count > y and avg_distance < keyword_count * 5:
-                    best_related_answers.append(
-                        (segment, keyword_count, avg_distance))
-
-                segment_start = pos + 1
-
-        if segment_start < len(text):
-            segment = text[segment_start:].strip()
-            words_in_segment = set(re.findall(r'\b\w+\b', segment.lower()))
-            keyword_count = sum(
-                kw.lower() in words_in_segment for kw in keywords)
-            if keyword_count > y:
-                best_related_answers.append(
-                    (segment, keyword_count, float('inf')))
-
-        max_matched_keywords = max(
-            (count for _, count, _ in best_related_answers), default=0)
-        filtered_answers = [
-            ans for ans, count, _ in best_related_answers if count == max_matched_keywords]
-
-        groups = []
-        for answer in filtered_answers:
-            found_group = False
-            for group in groups:
-                if similar(answer, group[0]) > similarity_threshold:
-                    group.append(answer)
-                    found_group = True
-                    break
-            if not found_group:
-                groups.append([answer])
-
-        selected_answers = [random.choice(group) for group in groups]
-        random.shuffle(selected_answers)
-
-        return ' '.join(selected_answers[:max_sentences]) if selected_answers else None
-
-    except Exception as e:
-        print(f"Lỗi xảy ra: {e}")
-        return None
-
-
-def traloi_theo_ngucanh1c(keywords, text, similarity_threshold=0.75, max_sentences=5):
-    if not keywords or not text:
-        return None  # Xử lý đầu vào rỗng
-
-    y = (len(keywords) // 6) + 1  # Ngưỡng tối thiểu để chọn câu
-    delimiters = ['.', '!', '?']  # Các dấu câu ngắt câu
-
-    def split_sentences(text):
-        """Tách văn bản thành từng câu dựa trên dấu ngắt câu"""
-        sentences = re.split(r'(?<=[.!?])\s+', text.strip())
-        return [s.strip() for s in sentences if s]
-
-    def find_keyword_positions(sentences, keywords):
-        """Xác định câu nào chứa từ khóa"""
-        keyword_counts = []
-        for sentence in sentences:
-            words = set(re.findall(r'\b\w+\b', sentence.lower()))
-            count = sum(kw.lower() in words for kw in keywords)
-            keyword_counts.append((sentence, count))
-        return keyword_counts
-
-    def compute_tfidf(sentences, keywords):
-        """Tính toán mức độ quan trọng của câu bằng TF-IDF"""
-        vectorizer = TfidfVectorizer(stop_words='english')
-        tfidf_matrix = vectorizer.fit_transform(sentences + keywords)
-        scores = np.mean(tfidf_matrix[:-len(keywords)].toarray(), axis=1)
-        return scores
-
-    try:
-        sentences = split_sentences(text)
-        keyword_positions = find_keyword_positions(sentences, keywords)
-
-        # Lọc câu có chứa nhiều từ khóa nhất
-        max_keyword_count = max(
-            (count for _, count in keyword_positions), default=0)
-        filtered_sentences = [
-            s for s, count in keyword_positions if count == max_keyword_count]
-
-        # Tính TF-IDF để chọn câu quan trọng nhất
-        if filtered_sentences:
-            tfidf_scores = compute_tfidf(filtered_sentences, keywords)
-            ranked_sentences = sorted(
-                zip(filtered_sentences, tfidf_scores), key=lambda x: x[1], reverse=True)
-            selected_sentences = [
-                s for s, _ in ranked_sentences[:max_sentences]]
-        else:
-            selected_sentences = []
-
-        return ' '.join(selected_sentences) if selected_sentences else None
-
-    except Exception as e:
-        print(f"Lỗi xảy ra: {e}")
-        return None
-
-
-def tach_tu_khoa_tu_cau_hoi(question):
-    # Loại bỏ dấu câu và tách từ
-    words = re.findall(r'\b\w+\b', question.lower())
-    # Từ dừng đơn giản (có thể mở rộng thêm)
-    stopwords = {'what', 'is', 'are', 'the', 'of', 'a',
-                 'an', 'for', 'to', 'why', 'how', 'do', 'does', 'did'}
-    keywords = [w for w in words if w not in stopwords]
-    return keywords
-
-
-def traloi_theo_ngucanh2c(keywords, text, similarity_threshold=0.75, max_sentences=5):
-
-    def split_sentences(text):
-        sentences = re.split(r'(?<=[.!?])\s+', text.strip())
-        return [s.strip() for s in sentences if s]
-
-    def find_keyword_positions(sentences, keywords):
-        keyword_counts = []
-        for sentence in sentences:
-            words = set(re.findall(r'\b\w+\b', sentence.lower()))
-            count = sum(kw.lower() in words for kw in keywords)
-            keyword_counts.append((sentence, count))
-        return keyword_counts
-
-    def compute_tfidf(sentences, keywords):
-        vectorizer = TfidfVectorizer(stop_words='english')
-        tfidf_matrix = vectorizer.fit_transform(sentences + keywords)
-        scores = np.mean(tfidf_matrix[:-len(keywords)].toarray(), axis=1)
-        return scores
-
-    try:
-        sentences = split_sentences(text)
-        keyword_positions = find_keyword_positions(sentences, keywords)
-
-        max_keyword_count = max(
-            (count for _, count in keyword_positions), default=0)
-        filtered_sentences = [
-            s for s, count in keyword_positions if count == max_keyword_count]
-
-        if filtered_sentences:
-            tfidf_scores = compute_tfidf(filtered_sentences, keywords)
-            ranked_sentences = sorted(
-                zip(filtered_sentences, tfidf_scores), key=lambda x: x[1], reverse=True)
-            selected_sentences = [
-                s for s, _ in ranked_sentences[:max_sentences]]
-        else:
-            selected_sentences = []
-
-        return ' '.join(selected_sentences) if selected_sentences else None
-
-    except Exception as e:
-        print(f"Lỗi xảy ra: {e}")
-        return None
-
-
-def capitalize_first_letter(paragraph):
-    if len(paragraph) > 0:
-        return paragraph[0].upper() + paragraph[1:]
-    return paragraph

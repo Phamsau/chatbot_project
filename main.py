@@ -2,7 +2,7 @@ from flow_control import execute_command
 from module_ggl import (
     luu_ngu_canh,
     search_google_1,
-    xoa_ngucanh,
+    xoa_ngucanh, xuli_doanvan_ngu_canh,
     traloi_theo_ngucanh2,
     traloi_theo_ngucanh1
 )
@@ -13,7 +13,7 @@ import pandas as pd
 import sys
 from datetime import datetime
 from core.handle_input import sau, bay, tu_dien
-from core.logic import tieptuc_traloi, tach_tu_khoa, tukhoa_tra_ngu_canh, capnhat
+from core.logic import tieptuc_traloi, tach_tu_khoa, capnhat
 
 # Trạng thái phiên trò chuyện (session đơn giản trong bộ nhớ)
 user_context = {
@@ -39,9 +39,9 @@ def chatbot_response(user_input):
 
         if user_input == "tiếp tục" and user_context["dk"]:
             tiep = user_context.get("tiep")
+            current_position = user_context.get("current_position", 0)
             if tiep:
-                next_words = tieptuc_traloi(
-                    tiep, user_context["current_position"])
+                next_words = tieptuc_traloi(tiep, current_position)
                 if next_words:
                     return next_words
                 else:
@@ -50,15 +50,13 @@ def chatbot_response(user_input):
                 return "Không có văn bản để trích xuất."
 
         # Trí tuệ ngữ cảnh
-        user_keywords = tach_tu_khoa(user_input)
-        text = tukhoa_tra_ngu_canh(
-            user_keywords, user_context["previous_answers"])
+        text = xuli_doanvan_ngu_canh(user_input)
 
         if text:
             if len(text) >= 100000:
-                return traloi_theo_ngucanh1(user_keywords, text)
+                return traloi_theo_ngucanh1(user_input, text)
             else:
-                return traloi_theo_ngucanh2(user_keywords, text)
+                return traloi_theo_ngucanh2(user_input, text)
 
         ct1 = sau(user_input)
         ct2 = bay(user_input)
@@ -74,12 +72,14 @@ def chatbot_response(user_input):
                 return f"Bây giờ là {datetime.now().strftime('%H:%M')}"
             return tu_dien.get(ct1, "Xin lỗi, tôi chưa có câu trả lời.")
 
+        # Nếu không có câu trả lời sẵn -> tra Google
         user_response, tiep = search_google_1(user_input)
         user_context["tiep"] = tiep
         user_context["dk"] = True
-        user_context["current_position"] = 99
+        user_context["current_position"] = len(
+            user_response.split())  # ✅ cập nhật vị trí
 
-        return capnhat(user_response)
+        return capnhat(user_input, user_response)
 
     except Exception as e:
         return f"Lỗi: {str(e)}"
@@ -121,7 +121,6 @@ def main():
     dk = False
     cv = True
     no_speech_count = 0
-    current_position = 99
     tiep = ""
 
     try:
@@ -161,16 +160,16 @@ def main():
                 user_input = user_input.lower().strip()
                 user_question = user_input
                 user_keywords = tach_tu_khoa(user_question)
-                text = tukhoa_tra_ngu_canh(user_keywords, previous_answers)
+                text = xuli_doanvan_ngu_canh(user_input)
                 best_related_answer = None
 
                 if text:
                     if len(text) >= 100000:
                         best_related_answer = traloi_theo_ngucanh1(
-                            user_keywords, text)
+                            user_input, text)
                     else:
                         best_related_answer = traloi_theo_ngucanh2(
-                            user_keywords, text)
+                            user_input, text)
 
                 if best_related_answer:
                     chatgpt_output = best_related_answer
@@ -191,8 +190,8 @@ def main():
                     else:
                         user_response, tiep = search_google_1(user_input)
                         dk = True
-                        current_position = 99
-                        chatgpt_output = capnhat(user_response)
+                        current_position = len(user_response.split())
+                        chatgpt_output = capnhat(user_input, user_response)
 
             hien_thi_vien_va_con_tro(chatgpt_output)
 

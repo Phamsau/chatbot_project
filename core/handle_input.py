@@ -49,7 +49,7 @@ def bay(user_input):
             similarity_score = difflib.SequenceMatcher(
                 None, normalized_question, user_input).ratio()
             # Chỉ thêm câu hỏi vào danh sách nếu độ tương đồng lớn hơn một ngưỡng nhất định (ví dụ: 0.6)
-            if similarity_score > 0.9:
+            if similarity_score > 0.75:
                 matched_questions.append(
                     (question, similarity_score))
     if matched_questions:

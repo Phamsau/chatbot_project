@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from openai import OpenAI  # đúng chuẩn mới
+from openai import OpenAI  # ✅ đúng cú pháp cho SDK mới
 
 load_dotenv()
 client = OpenAI(

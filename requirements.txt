@@ -17,3 +17,4 @@ googlesearch-python
 requests
 numpy
 python-dotenv
+gunicorn

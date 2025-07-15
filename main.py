@@ -107,15 +107,11 @@ def main():
         "Ok, Tôi sẵn sàng, xin bạn chờ trong giây lát",
         "Ok, mời bạn nghe thông tin thời tiết của chúng tôi",
         "Ok, mời bạn bắt đầu đăng ký đặt phòng.",
-        "Ok, mời bạn bắt đầu trò chuyện với chatbot",
         "Ok, xin cho biết bạn trả phòng số mấy?",
-        "ok, tôi sẵn sàng thông dịch cho bạn",
         "OK Mời bạn xem hình em Ngọc Trinh",
         "Đã xem ảnh"
     ]
 
-    waiting_for_face = True
-    image_viewed = False
     chatgpt_output = ""
     conversation_history = []
     dk = False

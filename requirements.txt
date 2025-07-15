@@ -16,3 +16,4 @@ beautifulsoup4
 googlesearch-python
 requests
 numpy
+python-dotenv

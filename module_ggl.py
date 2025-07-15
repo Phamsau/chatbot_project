@@ -9,11 +9,10 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import time
-from underthesea import word_tokenize
 previous_answers = {}
 
 
-def luu_ngu_canh(question, answer, MAX_QUESTIONS=1):
+def luu_ngu_canh(question, answer, MAX_QUESTIONS=2):
     if len(previous_answers) >= MAX_QUESTIONS:
         oldest_question = next(iter(previous_answers))  # Lấy câu hỏi cũ nhất
         del previous_answers[oldest_question]  # Xóa câu hỏi cũ nhất

@@ -1,4 +1,4 @@
-
+from core.groq import lam_dep_cau_tra_loi_groq
 
 # Giả định previous_answers được khởi tạo trong chatchinh.py và truyền vào nếu cần
 
@@ -26,14 +26,14 @@ def tach_tu_khoa(text):
 
 def capnhat(user_input, user_response):
     if user_response:
-        chatgpt_output = user_response
+        chatgpt_output = lam_dep_cau_tra_loi_groq(user_input, user_response)
         # lưu dữ liệu vào excel
         # ghi_dulieu(user_input, chatgpt_output)
 
     else:
         # print(kq)
         chatgpt_output = (
-            "xin lỗi tôi không tìm thấy thông tin ")
+            "xin lỗi tôi không tìm thấy thông tin " + user_input)
     return chatgpt_output
 
 

@@ -10,11 +10,9 @@ from module_xuli import hien_thi_vien_va_con_tro
 from nghe_noi import recognize_speech1, speak_text1, speak_text
 import subprocess
 import pandas as pd
-import sys
 from datetime import datetime
 from core.handle_input import sau, bay, tu_dien
 from core.logic import tieptuc_traloi, tach_tu_khoa, capnhat
-
 # Trạng thái phiên trò chuyện (session đơn giản trong bộ nhớ)
 user_context = {
     "tiep": None,
@@ -54,9 +52,11 @@ def chatbot_response(user_input):
 
         if text:
             if len(text) >= 100000:
-                return traloi_theo_ngucanh1(user_input, text)
+                user_response = traloi_theo_ngucanh1(user_input, text)
+                return capnhat(user_input, user_response)
             else:
-                return traloi_theo_ngucanh2(user_input, text)
+                user_response = traloi_theo_ngucanh2(user_input, text)
+                return capnhat(user_input, user_response)
 
         ct1 = sau(user_input)
         ct2 = bay(user_input)
@@ -172,12 +172,13 @@ def main():
                             user_input, text)
 
                 if best_related_answer:
-                    chatgpt_output = best_related_answer
+                    chatgpt_output = capnhat(user_input, best_related_answer)
                 else:
                     ct1 = sau(user_input)
                     ct2 = bay(user_input)
                     if ct1 and ct2:
-                        chatgpt_output = tu_dien.get(ct1, random_responses[0])
+                        chatgpt_output = capnhat(
+                            user_input, tu_dien.get(ct1, random_responses[0]))
                         luu_ngu_canh(user_input, chatgpt_output)
                     elif ct1 in danh_muc() and not ct2:
                         if ct1 == "ngày mấy":

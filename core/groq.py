@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import OpenAI  # đúng chuẩn mới
 
 load_dotenv()
 client = OpenAI(
@@ -14,7 +14,7 @@ def lam_dep_cau_tra_loi_groq(user_input, raw_answer, history=None):
     history += [
         {"role": "user", "content": user_input},
         {"role": "assistant", "content": raw_answer},
-        {"role": "user", "content": "→ Viết lại câu trả lời bằng tiếng Việt thật mạch lạc và thân thiện."}
+        {"role": "user", "content": "→ Viết lại câu trả lời bằng tiếng Việt mạch lạc và thân thiện."}
     ]
     try:
         resp = client.chat.completions.create(

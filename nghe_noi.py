@@ -1,8 +1,6 @@
 
-from playsound import playsound
+
 import asyncio
-import time
-import platform
 import edge_tts
 from gtts import gTTS
 import speech_recognition as sr

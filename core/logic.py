@@ -24,17 +24,20 @@ def tach_tu_khoa(text):
 # Hàm để xóa thông tin tra cứu khi kết thúc cuộc trò chuyện
 
 
-def capnhat(user_input, user_response):
+def capnhat(user_input, user_response, history):
     if user_response:
-        chatgpt_output = lam_dep_cau_tra_loi_groq(user_input, user_response)
+        chatgpt_output = lam_dep_cau_tra_loi_groq(
+            user_input, user_response, history)
         # lưu dữ liệu vào excel
         # ghi_dulieu(user_input, chatgpt_output)
-
+        # Cập nhật history
+        history += [
+            {"role": "user", "content": user_input},
+            {"role": "assistant", "content": chatgpt_output}
+        ]
     else:
-        # print(kq)
-        chatgpt_output = (
-            "xin lỗi tôi không tìm thấy thông tin " + user_input)
-    return chatgpt_output
+        chatgpt_output = "Xin lỗi, tôi không tìm thấy thông tin: " + user_input
+    return chatgpt_output, history
 
 
 def tieptuc_traloi(all_text, current_position):

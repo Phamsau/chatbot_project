@@ -11,15 +11,16 @@ client = OpenAI(
 
 def lam_dep_cau_tra_loi_groq(user_input, raw_answer, history=None):
     history = history or []
-    history += [
+    messages = history + [
         {"role": "user", "content": user_input},
         {"role": "assistant", "content": raw_answer},
         {"role": "user", "content": "→ Viết lại câu trả lời bằng tiếng Việt mạch lạc và thân thiện."}
     ]
+    print(history)
     try:
         resp = client.chat.completions.create(
             model="llama3-8b-8192",
-            messages=history,
+            messages=messages,
             temperature=0.7,
             max_tokens=300
         )

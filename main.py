@@ -28,14 +28,20 @@ def chatbot_response(user_input):
         if not user_input:
             return "Xin vui lòng cho biết yêu cầu của bạn"
 
-        # Xử lý đặc biệt
+        # Khởi tạo history nếu chưa có
+        if "history" not in user_context:
+            user_context["history"] = []
+
+        # Xử lý đặc biệt: Xóa ngữ cảnh
         if user_input == "xóa ngữ cảnh":
             xoa_ngucanh()
+            user_context["history"] = []  # ✅ reset context
             user_context["previous_answers"] = luu_ngu_canh(
                 "question", "answer")
             return "Ngữ cảnh đã được xóa."
 
-        if user_input == "tiếp tục" and user_context["dk"]:
+        # Xử lý đặc biệt: Tiếp tục
+        if user_input == "tiếp tục" and user_context.get("dk"):
             tiep = user_context.get("tiep")
             current_position = user_context.get("current_position", 0)
             if tiep:
@@ -47,17 +53,20 @@ def chatbot_response(user_input):
             else:
                 return "Không có văn bản để trích xuất."
 
-        # Trí tuệ ngữ cảnh
+        # Trả lời theo đoạn văn ngữ cảnh
         text = xuli_doanvan_ngu_canh(user_input)
-
         if text:
             if len(text) >= 100000:
                 user_response = traloi_theo_ngucanh1(user_input, text)
-                return capnhat(user_input, user_response)
             else:
                 user_response = traloi_theo_ngucanh2(user_input, text)
-                return capnhat(user_input, user_response)
+            chatgpt_output, updated_history = capnhat(
+                user_input, user_response, user_context["history"])
+            # ✅ giữ lại 10 cặp gần nhất
+            user_context["history"] = updated_history[-20:]
+            return chatgpt_output
 
+        # Xử lý theo từ điển nội bộ
         ct1 = sau(user_input)
         ct2 = bay(user_input)
 
@@ -65,21 +74,24 @@ def chatbot_response(user_input):
             output = tu_dien.get(ct1, "Xin lỗi, tôi chưa có câu trả lời.")
             luu_ngu_canh(user_input, output)
             return output
-        elif ct1 in danh_muc():
+
+        if ct1 in danh_muc():
             if ct1 == "ngày mấy":
                 return f"Hôm nay là {datetime.now().strftime('%d/%m/%Y')}"
             elif ct1 == "mấy giờ rồi":
                 return f"Bây giờ là {datetime.now().strftime('%H:%M')}"
             return tu_dien.get(ct1, "Xin lỗi, tôi chưa có câu trả lời.")
 
-        # Nếu không có câu trả lời sẵn -> tra Google
+        # Nếu không có câu trả lời -> tra Google
         user_response, tiep = search_google_1(user_input)
         user_context["tiep"] = tiep
         user_context["dk"] = True
-        user_context["current_position"] = len(
-            user_response.split())  # ✅ cập nhật vị trí
+        user_context["current_position"] = len(user_response.split())
 
-        return capnhat(user_input, user_response)
+        chatgpt_output, updated_history = capnhat(
+            user_input, user_response, user_context["history"])
+        user_context["history"] = updated_history[-20:]
+        return chatgpt_output
 
     except Exception as e:
         return f"Lỗi: {str(e)}"
@@ -119,6 +131,7 @@ def main():
     no_speech_count = 0
     tiep = ""
 
+    history = []
     try:
         speak_text("Xin chào, tôi giúp được gì cho bạn?")
         data = pd.read_excel('sau.xlsx')
@@ -149,6 +162,7 @@ def main():
             elif user_input.lower() == "xóa ngữ cảnh":
                 chatgpt_output = "Ok, Ngữ cảnh cuộc trò chuyện đã xóa"
                 xoa_ngucanh()
+                history = []
             elif user_input == "":
                 chatgpt_output = "Xin vui lòng cho biết yêu cầu của bạn"
             else:
@@ -168,13 +182,16 @@ def main():
                             user_input, text)
 
                 if best_related_answer:
-                    chatgpt_output = capnhat(user_input, best_related_answer)
+                    chatgpt_output, updated_history = capnhat(
+                        user_input, best_related_answer, history)
+                    history = updated_history[-20:]
                 else:
                     ct1 = sau(user_input)
                     ct2 = bay(user_input)
                     if ct1 and ct2:
-                        chatgpt_output = capnhat(
-                            user_input, tu_dien.get(ct1, random_responses[0]))
+                        chatgpt_output, updated_history = capnhat(
+                            user_input, tu_dien.get(ct1, random_responses[0]), history)
+                        history = updated_history[-20:]
                         luu_ngu_canh(user_input, chatgpt_output)
                     elif ct1 in danh_muc() and not ct2:
                         if ct1 == "ngày mấy":
@@ -188,7 +205,9 @@ def main():
                         user_response, tiep = search_google_1(user_input)
                         dk = True
                         current_position = len(user_response.split())
-                        chatgpt_output = capnhat(user_input, user_response)
+                        chatgpt_output, updated_history = capnhat(
+                            user_input, user_response, history)
+                        history = updated_history[-20:]
 
             hien_thi_vien_va_con_tro(chatgpt_output)
 

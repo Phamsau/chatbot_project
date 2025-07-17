@@ -180,7 +180,7 @@ def main():
                     else:
                         best_related_answer = traloi_theo_ngucanh2(
                             user_input, text)
-
+                    print("thô: ", best_related_answer)
                 if best_related_answer:
                     chatgpt_output, updated_history = capnhat(
                         user_input, best_related_answer, history)

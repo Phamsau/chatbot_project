@@ -71,7 +71,7 @@ def chatbot_response(user_input):
         ct2 = bay(user_input)
 
         if ct1 and ct2:
-            output = tu_dien.get(ct1, "Xin lỗi, tôi chưa có câu trả lời.")
+            output = tu_dien.get(ct1)
             luu_ngu_canh(user_input, output)
             return output
 
@@ -80,7 +80,7 @@ def chatbot_response(user_input):
                 return f"Hôm nay là {datetime.now().strftime('%d/%m/%Y')}"
             elif ct1 == "mấy giờ rồi":
                 return f"Bây giờ là {datetime.now().strftime('%H:%M')}"
-            return tu_dien.get(ct1, "Xin lỗi, tôi chưa có câu trả lời.")
+            return tu_dien.get(ct1)
 
         # Nếu không có câu trả lời -> tra Google
         user_response, tiep = search_google_1(user_input)
@@ -110,11 +110,6 @@ def main():
     def call_program_thongdichkokivy():
         subprocess.call(['python', 'thongdichkokivy.py'])
 
-    random_responses = [
-        "Xin lỗi, câu hỏi của bạn tôi chưa có thông tin, xin giúp tôi cập nhật cho tôi biết.",
-        "xin lỗi, Tôi không thể trả lời câu hỏi của bạn, xin bạn hãy giúp tôi cập nhật.",
-        "Xin lỗi, vấn đề bạn hỏi tôi chưa cập nhật, bạn có thể cung cấp thêm thông tin ?"
-    ]
     list_cmd = [
         "Ok, Tôi sẵn sàng, xin bạn chờ trong giây lát",
         "Ok, mời bạn nghe thông tin thời tiết của chúng tôi",
@@ -190,7 +185,7 @@ def main():
                     ct2 = bay(user_input)
                     if ct1 and ct2:
                         chatgpt_output, updated_history = capnhat(
-                            user_input, tu_dien.get(ct1, random_responses[0]), history)
+                            user_input, tu_dien[ct1], history)
                         history = updated_history[-20:]
                         luu_ngu_canh(user_input, chatgpt_output)
                     elif ct1 in danh_muc() and not ct2:
@@ -199,8 +194,7 @@ def main():
                         elif ct1 == "mấy giờ rồi":
                             chatgpt_output = f"Bây giờ là {datetime.now().strftime('%H:%M')}"
                         else:
-                            chatgpt_output = tu_dien.get(
-                                ct1, random_responses[1])
+                            chatgpt_output = tu_dien[ct1]
                     else:
                         user_response, tiep = search_google_1(user_input)
                         dk = True

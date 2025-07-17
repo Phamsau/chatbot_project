@@ -10,9 +10,10 @@ client = OpenAI(
 
 
 def lam_dep_cau_tra_loi_groq(cau_hoi, cau_tra_loi_goc, ngu_canh=None):
+    print(cau_tra_loi_goc)
     ngu_canh = ngu_canh or []
     messages = [
-        {"role": "system", "content": "Bạn là một trợ lý AI tiếng Việt đáng tin cậy. Chỉ trả lời dựa trên thông tin đã có. Không được suy diễn hoặc bịa đặt. Nếu không biết, hãy nói 'Tôi không có đủ thông tin.'"}
+        {"role": "system", "content": "Bạn là một trợ lý AI tiếng Việt đáng tin cậy. Chỉ trả lời dựa trên thông tin đã có."}
     ] + ngu_canh + [
         {"role": "user", "content": cau_hoi}
     ]
@@ -24,7 +25,7 @@ def lam_dep_cau_tra_loi_groq(cau_hoi, cau_tra_loi_goc, ngu_canh=None):
         "role": "user",
         "content": "→ Viết lại câu trả lời bằng tiếng Việt mạch lạc và thân thiện. Tuyệt đối không bịa đặt!"
     })
-
+    print("messages:", messages)
     try:
         ket_qua = client.chat.completions.create(
             model="llama3-8b-8192",

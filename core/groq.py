@@ -12,7 +12,7 @@ client = OpenAI(
 def lam_dep_cau_tra_loi_groq(cau_hoi, cau_tra_loi_goc, ngu_canh=None):
     ngu_canh = ngu_canh or []
     messages = [
-        {"role": "system", "content": "Bạn là một trợ lý AI tiếng Việt đáng tin cậy. Chỉ trả lời dựa trên thông tin đã có. Không được suy diễn hoặc bịa đặt. Nếu không biết, hãy nói 'Tôi không có đủ thông tin.'"}
+        {"role": "system", "content": "Bạn là một trợ lý AI tiếng Việt đáng tin cậy. Chỉ trả lời dựa trên thông tin đã có. Nếu không biết, hãy nói 'Tôi không có đủ thông tin.'"}
     ] + ngu_canh + [
         {"role": "user", "content": cau_hoi}
     ]

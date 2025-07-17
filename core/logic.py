@@ -28,8 +28,8 @@ def capnhat(user_input, user_response, history):
     if user_response:
         chatgpt_output = lam_dep_cau_tra_loi_groq(
             user_input, user_response, history)
-        # lưu dữ liệu vào excel
-        # ghi_dulieu(user_input, chatgpt_output)
+        #lưu dữ liệu vào excel
+        ghi_dulieu(user_input, chatgpt_output)
         # Cập nhật history
         history += [
             {"role": "user", "content": user_input},

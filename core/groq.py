@@ -13,7 +13,11 @@ def lam_dep_cau_tra_loi_groq(cau_hoi, cau_tra_loi_goc, ngu_canh=None):
     print(cau_tra_loi_goc)
     ngu_canh = ngu_canh or []
     messages = [
+<<<<<<< HEAD
         {"role": "system", "content": "Bạn là một trợ lý AI tiếng Việt đáng tin cậy. Chỉ trả lời dựa trên thông tin đã có."}
+=======
+        {"role": "system", "content": "Bạn là một trợ lý AI tiếng Việt đáng tin cậy. Chỉ trả lời dựa trên thông tin đã có. Nếu không biết, hãy nói 'Tôi không có đủ thông tin.'"}
+>>>>>>> 857bc691252833c21f9b7681c1a83e5c6a9961fa
     ] + ngu_canh + [
         {"role": "user", "content": cau_hoi}
     ]

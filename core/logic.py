@@ -1,4 +1,4 @@
-from core.groq import lam_dep_cau_tra_loi_groq, thu_ditsit
+from core.groq import lam_dep_cau_tra_loi_groq
 
 # Giả định previous_answers được khởi tạo trong chatchinh.py và truyền vào nếu cần
 

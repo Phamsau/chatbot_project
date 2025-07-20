@@ -1,6 +1,5 @@
 
 from googlesearch import search  # Cần cài đặt: pip install googlesearch-python
-from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 from difflib import SequenceMatcher
 import random
@@ -135,7 +134,7 @@ def search_google(keyword, num_of_results=10, max_sources=2, max_words=100):
 
         # Backup version xoá \n thành space
         text = all_text.replace("\n", " ")
-        print("đạn văn seachgoogle: ", text)
+
         if text.strip():
             try:
                 luu_ngu_canh(keyword, text)
@@ -146,7 +145,9 @@ def search_google(keyword, num_of_results=10, max_sources=2, max_words=100):
         if len(words) > max_words:
             doan_dau_text = traloi_theo_ngucanh2_1(keyword, text)
             if doan_dau_text:
+
                 doan_dau = doan_dau_text
+                print("đạn văn seachgoogle: ", doan_dau)
             else:
                 doan_dau = f"Xin lỗi, tôi không tìm thấy thông tin {keyword}"
         else:
@@ -257,7 +258,11 @@ STOPWORDS = {
     "ấy", "thì", "ở", "đâu", "vì", "ra", "nó", "nhưng", "những", "hả", "sẽ", "mấy"
 }
 STOP_PHRASES = [
-    "bao nhiêu", "như thế nào", "làm sao", "ở đâu", "khi nào", "là gì", "tại vì sao", "vì sao"
+    "bao nhiêu", "như thế nào", "làm sao", "ở đâu", "khi nào", "là gì", "tại sao", "vì sao", "tại vì sao",
+    "ai là", "ai đã", "ai đang", "có đúng không", "có phải là", "có thể", "có hay không", "có không",
+    "nào là", "cái gì", "gì vậy", "thế nào", "cách nào", "phải không", "ra sao", "để làm gì",
+    "mấy giờ", "mấy tuổi", "dài bao nhiêu", "cao bao nhiêu", "giá bao nhiêu", "kéo dài bao lâu",
+    "bằng cách nào", "vì điều gì", "có nghĩa là gì", "được không", "được chứ"
 ]
 # Bộ mở rộng từ khóa theo loại câu hỏi
 BO_TU_MO_RONG = {
@@ -447,62 +452,6 @@ def traloi_theo_ngucanh1(user_input, text, similarity_threshold=0.75):
     except Exception as e:
         print(f"Lỗi xảy ra: {e}")
     return None
-
-
-# DÙNG CHO VĂN BẢN LỚN
-def traloi_theo_ngucanh1a(keywords, text, similarity_threshold=0.75, max_sentences=5):
-    if not keywords or not text:
-        return None  # Xử lý đầu vào rỗng
-
-    y = (len(keywords) // 6) + 1  # Ngưỡng tối thiểu để chọn câu
-    delimiters = ['.', '!', '?']  # Các dấu câu ngắt câu
-
-    def split_sentences(text):
-        """Tách văn bản thành từng câu dựa trên dấu ngắt câu"""
-        sentences = re.split(r'(?<=[.!?])\s+', text.strip())
-        return [s.strip() for s in sentences if s]
-
-    def find_keyword_positions(sentences, keywords):
-        """Xác định câu nào chứa từ khóa"""
-        keyword_counts = []
-        for sentence in sentences:
-            words = set(re.findall(r'\b\w+\b', sentence.lower()))
-            count = sum(kw.lower() in words for kw in keywords)
-            keyword_counts.append((sentence, count))
-        return keyword_counts
-
-    def compute_tfidf(sentences, keywords):
-        """Tính toán mức độ quan trọng của câu bằng TF-IDF"""
-        vectorizer = TfidfVectorizer(stop_words='english')
-        tfidf_matrix = vectorizer.fit_transform(sentences + keywords)
-        scores = np.mean(tfidf_matrix[:-len(keywords)].toarray(), axis=1)
-        return scores
-
-    try:
-        sentences = split_sentences(text)
-        keyword_positions = find_keyword_positions(sentences, keywords)
-
-        # Lọc câu có chứa nhiều từ khóa nhất
-        max_keyword_count = max(
-            (count for _, count in keyword_positions), default=0)
-        filtered_sentences = [
-            s for s, count in keyword_positions if count == max_keyword_count]
-
-        # Tính TF-IDF để chọn câu quan trọng nhất
-        if filtered_sentences:
-            tfidf_scores = compute_tfidf(filtered_sentences, keywords)
-            ranked_sentences = sorted(
-                zip(filtered_sentences, tfidf_scores), key=lambda x: x[1], reverse=True)
-            selected_sentences = [
-                s for s, _ in ranked_sentences[:max_sentences]]
-        else:
-            selected_sentences = []
-
-        return ' '.join(selected_sentences) if selected_sentences else None
-
-    except Exception as e:
-        print(f"Lỗi xảy ra: {e}")
-        return None
 
 
 def traloi_theo_ngucanh2(question, text, k=0.75):  # DÙNG CHO VĂN BẢN NHỎ
@@ -699,15 +648,18 @@ def traloi_theo_ngucanh2_1(question, text, k=0.75):
     selected_answers = [capitalize_first_letter(
         random.choice(g)) for g in groups]
 
-    # Xáo và nối lại thành đoạn văn mạch lạc
+    # Xáo và nối lại thành đoạn văn mạch
     def clean_paragraph(sentences):
         text = ' '.join(sentences)
         text = re.sub(r'\s+', ' ', text)
         return text.strip()
 
-    random.shuffle(selected_answers)
     if selected_answers:
-        return clean_paragraph(selected_answers)
+
+        paragraph = clean_paragraph(selected_answers)  # Không shuffle
+        if len(paragraph) > 1000:
+            paragraph = paragraph[:1000].rsplit(".", 1)[0] + "."
+        return paragraph
     return None
 
 

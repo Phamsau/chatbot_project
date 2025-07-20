@@ -4,6 +4,11 @@ from openai import OpenAI  # ✅ đúng cú pháp cho SDK mới
 
 load_dotenv()
 
+client = OpenAI(
+    api_key=os.getenv("GROQ_API_KEY"),
+    base_url="https://api.groq.com/openai/v1"
+)
+
 
 def loc_lich_su(lich_su):
     """Lọc bỏ các câu trả lời xin lỗi không cần thiết để tránh lặp lại"""
@@ -17,10 +22,6 @@ def loc_lich_su(lich_su):
 
 
 def lam_dep_cau_tra_loi_groq(cau_hoi, noi_dung_tham_khao, ngu_canh=None):
-    client = OpenAI(
-        api_key=os.getenv("GROQ_API_KEY"),
-        base_url="https://api.groq.com/openai/v1"
-    )
 
     ngu_canh = loc_lich_su(ngu_canh or [])
 

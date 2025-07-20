@@ -74,7 +74,10 @@ def chatbot_response(user_input):
         if ct1 and ct2:
             output = tu_dien.get(ct1)
             luu_ngu_canh(user_input, output)
-            return output
+            chatgpt_output, updated_history = capnhat(
+                user_input, output, user_context["history"])
+            user_context["history"] = updated_history[-20:]
+            return chatgpt_output
 
         if ct1 in danh_muc():
             if ct1 == "ngày mấy":
@@ -84,7 +87,7 @@ def chatbot_response(user_input):
             return tu_dien.get(ct1)
 
         # Nếu không có câu trả lời -> tra Google
-        user_response, tiep = search_google_1(user_input)
+        user_response, tiep = search_google(user_input)
         user_context["tiep"] = tiep
         user_context["dk"] = True
         user_context["current_position"] = len(user_response.split())
@@ -106,9 +109,6 @@ def danh_muc():
 
 
 def main():
-
-    def call_program_thongdichkokivy():
-        subprocess.call(['python', 'thongdichkokivy.py'])
 
     list_cmd = [
         "Ok, Tôi sẵn sàng, xin bạn chờ trong giây lát",

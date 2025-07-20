@@ -46,7 +46,7 @@ def xuli_doanvan_ngu_canh(user_input):
                 max_similarity = similarity
                 best_paragraph = paragraph
 
-    if max_similarity >= 0.9:
+    if max_similarity >= 0.8:
         print("đoạn  văn lọc được: ", best_paragraph.strip())
         return best_paragraph.strip()
     else:
@@ -71,7 +71,7 @@ def xuly_vanban_google(keyword, all_text):
     return all_text  # Trả về phần văn bản được lấy ra từ vị trí đầu tiên của từ khóa
 
 
-def search_google(keyword, num_of_results=10, max_sources=2, max_words=100):
+def search_google(keyword, num_of_results=5, max_sources=2, max_words=100):
 
     try:
         search_results = search(keyword, num_results=num_of_results, lang='vi')
@@ -87,7 +87,7 @@ def search_google(keyword, num_of_results=10, max_sources=2, max_words=100):
 
             try:
                 response = requests.get(first_link, timeout=10, verify=False)
-                time.sleep(random.uniform(1, 3))  # Sleep để tránh bị chặn
+                time.sleep(random.uniform(0.3, 0.5))  # Sleep để tránh bị chặn
 
                 soup = BeautifulSoup(response.content, 'html.parser')
 

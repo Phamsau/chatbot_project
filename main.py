@@ -2,8 +2,9 @@ from flow_control import execute_command
 from module_ggl import (
     luu_ngu_canh,
     search_google_1,
+    search_google,
     xoa_ngucanh, xuli_doanvan_ngu_canh,
-    traloi_theo_ngucanh2,
+    traloi_theo_ngucanh2, traloi_theo_ngucanh2_1,
     traloi_theo_ngucanh1
 )
 from module_xuli import hien_thi_vien_va_con_tro
@@ -59,7 +60,7 @@ def chatbot_response(user_input):
             if len(text) >= 100000:
                 user_response = traloi_theo_ngucanh1(user_input, text)
             else:
-                user_response = traloi_theo_ngucanh2(user_input, text)
+                user_response = traloi_theo_ngucanh2_1(user_input, text)
             chatgpt_output, updated_history = capnhat(
                 user_input, user_response, user_context["history"])
             # ✅ giữ lại 10 cặp gần nhất
@@ -105,7 +106,6 @@ def danh_muc():
 
 
 def main():
-    previous_answers = luu_ngu_canh("question", "answer")
 
     def call_program_thongdichkokivy():
         subprocess.call(['python', 'thongdichkokivy.py'])
@@ -119,8 +119,6 @@ def main():
         "Đã xem ảnh"
     ]
 
-    chatgpt_output = ""
-    conversation_history = []
     dk = False
     cv = True
     no_speech_count = 0
@@ -163,9 +161,9 @@ def main():
             else:
                 dk = False
                 user_input = user_input.lower().strip()
-                user_question = user_input
-                user_keywords = tach_tu_khoa(user_question)
+
                 text = xuli_doanvan_ngu_canh(user_input)
+
                 best_related_answer = None
 
                 if text:
@@ -173,9 +171,8 @@ def main():
                         best_related_answer = traloi_theo_ngucanh1(
                             user_input, text)
                     else:
-                        best_related_answer = traloi_theo_ngucanh2(
+                        best_related_answer = traloi_theo_ngucanh2_1(
                             user_input, text)
-                    print("thô: ", best_related_answer)
                 if best_related_answer:
                     chatgpt_output, updated_history = capnhat(
                         user_input, best_related_answer, history)
@@ -196,8 +193,9 @@ def main():
                         else:
                             chatgpt_output = tu_dien[ct1]
                     else:
-                        user_response, tiep = search_google_1(user_input)
+                        user_response, tiep = search_google(user_input)
                         dk = True
+
                         current_position = len(user_response.split())
                         chatgpt_output, updated_history = capnhat(
                             user_input, user_response, history)

@@ -1,4 +1,4 @@
-from core.groq import lam_dep_cau_tra_loi_groq
+from core.groq import lam_dep_cau_tra_loi_groq, thu_ditsit
 
 # Giả định previous_answers được khởi tạo trong chatchinh.py và truyền vào nếu cần
 
@@ -21,22 +21,21 @@ def tach_tu_khoa(text):
     return cum_tu_khoa
 
 
-# Hàm để xóa thông tin tra cứu khi kết thúc cuộc trò chuyện
-
-
 def capnhat(user_input, user_response, history):
+    """Cập nhật đoạn hội thoại + xử lý câu trả lời sao cho đẹp"""
     if user_response:
         chatgpt_output = lam_dep_cau_tra_loi_groq(
-            user_input, user_response, history)
-        #lưu dữ liệu vào excel
-        #ghi_dulieu(user_input, chatgpt_output)
-        # Cập nhật history
+            user_input, user_response, history
+        )
+
+        # Cập nhật lại lịch sử: user → assistant
         history += [
             {"role": "user", "content": user_input},
             {"role": "assistant", "content": chatgpt_output}
         ]
     else:
-        chatgpt_output = "Xin lỗi, tôi không tìm thấy thông tin: " + user_input
+        chatgpt_output = f"Xin lỗi, tôi không tìm thấy thông tin cho: {user_input}"
+
     return chatgpt_output, history
 
 

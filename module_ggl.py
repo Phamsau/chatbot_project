@@ -12,14 +12,14 @@ previous_answers = {}
 
 # Stopwords để loại bỏ từ khóa nhiễu
 STOPWORDS = {
-    "gì", "nào", "ai", "sao", "à", "và", "là", "các", "của",
+    "gì", "nào", "ai", "sao", "à", "và", "là", "các",
     "ấy", "thì", "ở", "đâu", "vì", "ra", "nó", "nhưng", "những", "hả", "sẽ", "mấy", "không"
 }
 STOP_PHRASES = [
     "bao nhiêu", "như thế nào", "làm sao", "ở đâu", "khi nào", "là gì", "tại sao", "vì sao", "tại vì sao",
     "ai là", "ai đã", "ai đang", "có đúng không", "có phải là", "có thể", "có hay không", "có không",
     "nào là", "cái gì", "gì vậy", "thế nào", "cách nào", "phải không", "ra sao", "để làm gì",
-    "mấy giờ", "mấy tuổi", "dài bao nhiêu", "cao bao nhiêu", "giá bao nhiêu", "kéo dài bao lâu",
+    "mấy giờ", "mấy tuổi", "bao nhiêu", "kéo dài bao lâu",
     "bằng cách nào", "vì điều gì", "có nghĩa là gì", "được không", "được chứ", "bạn có biết", "là gì", "là ai", "có biết"
 ]
 # Bộ mở rộng từ khóa theo loại câu hỏi
@@ -27,19 +27,21 @@ BO_TU_MO_RONG = {
     "ai": ["ai", "người", "tên", "gọi là", "ông", "bà", "cô", "chú"],
     "trong": ["ngoài", "trên", "dưới", "trong"],
     "đó là gì": ["đó là", "gọi là", "được xem là", "có nghĩa là", "định nghĩa"],
-    "ở đâu": ["ở", "tại", "nơi", "địa điểm", "quê", "xuất thân"],
+    "ở đâu": ["ở", "tại", "sống", "nơi", "địa điểm", "quê", "xuất thân"],
     "khi nào": ["khi", "năm", "tháng", "ngày", "lúc", "thời gian", "thời điểm"],
-    "vì sao": ["vì", "do", "tại sao", "bởi vì", "nguyên nhân", "lý do"],
-    "như thế nào": ["như", "cách", "ra sao", "mô tả", "kiểu", "dạng", "đặc điểm"],
-    "bao nhiêu": ["bao nhiêu", "số", "mấy", "tổng", "khoảng"],
+    "vì sao": ["vì", "do", "tại vì", "bởi vì", "nguyên nhân", "lý do"],
+    "như thế nào": ["như thế này", "cách", "ra sao", "mô tả", "kiểu", "dạng", "đặc điểm"],
+    "bao nhiêu": ["số", "tổng", "khoảng" "chừng"],
     "đang làm gì": ["đang làm", "hành động", "thực hiện", "công việc"],
-    "phu nhân": ["phu nhân", "vợ", "bà xã"],
+    "phu nhân": ["phu nhân", "vợ"],
     "chồng": ["chồng", "ông xã", "phu quân"],
     "triều đình": ["triều đình", "vua quan", "hoàng vương", "vua chúa", "hoàng triều"],
     "ông": ["ông", "cụ", "ngài", "lão"],
     "bà": ["bà", "cô", "mợ", "thím", "chị", "dì"],
     "đình": ["đình", "đền", "miếu", "chùa", "nơi thờ"],
-    "quan": ["quan", "quan lại", "quan chức", "chức tước", "viên chức"]
+    "quan": ["quan", "quan lại", "quan chức", "chức tước", "viên chức"],
+    "quê": ["quê", "quán", "nơi sinh", "sinh sống", "hiện ở tại"],
+    "chết": ["chết", "mất", "tử vong", "qua đời"]
 }
 
 
@@ -69,12 +71,16 @@ def loc_tu_quan_trong(cau_hoi):
     return [w for w in words if w not in STOPWORDS]
 
 
-def expand_keywords(base_keywords, question):
-    """Mở rộng từ khóa từ câu hỏi và tách cụm từ thành từ đơn."""
+def expand_keywords(question):
+    """Mở rộng từ khóa theo loại câu hỏi dựa trên các cụm từ ưu tiên đã định nghĩa."""
+    base_keywords = tach_tu_khoa(question)
+    question_lower = question.lower()
     priority_keywords = []
-    for key, vals in BO_TU_MO_RONG.items():
-        if key in question.lower():
-            priority_keywords.extend(vals)
+    for nhom, cum_tu in BO_TU_MO_RONG.items():
+        for phrase in cum_tu:
+            if phrase in question_lower:
+                priority_keywords.extend(cum_tu)
+                # break  # Nếu một cụm phù hợp thì thêm toàn bộ nhóm
 
     # Tách cụm từ thành từ đơn
     tu_don_tu_cum = []
@@ -170,7 +176,7 @@ def xuly_vanban_google(keyword, all_text):
 def search_google(keyword, num_of_results=5, max_sources=2, max_words=200):
 
     keyword = " ".join(loc_tu_quan_trong(keyword))
-    print(keyword)
+
     try:
         search_results = search(keyword, num_results=num_of_results, lang='vi')
         all_paragraphs = []
@@ -260,7 +266,7 @@ def search_google(keyword, num_of_results=5, max_sources=2, max_words=200):
 
 
 def tra_loi_tho(user_input, text):
-    print(len(text))
+
     if len(text) >= 100000:
         best_related_answer = traloi_theo_ngucanh1(user_input, text)
         print("đạn văn seachgoogle sll: ", best_related_answer)
@@ -273,8 +279,8 @@ def tra_loi_tho(user_input, text):
 
 
 def traloi_theo_ngucanh1(user_input, text, similarity_threshold=0.75):
-    base_keywords = tach_tu_khoa(user_input)
-    keywords = expand_keywords(base_keywords, user_input)
+
+    keywords = expand_keywords(user_input)
     y = (len(keywords) // 11) + 1
 
     def find_positions(text, delimiters):
@@ -382,12 +388,12 @@ def traloi_theo_ngucanh2_1(user_input, text, k=0.75):
     Trích xuất các câu liên quan đến câu hỏi dựa trên từ khóa mở rộng và ngữ cảnh.
     - Trả về đoạn văn ngắn gọn, cô đọng, sẵn sàng làm đầu vào cho LLM.
     """
-    base_keywords = tach_tu_khoa(user_input)
-    keywords = expand_keywords(base_keywords, user_input)
+    keywords = expand_keywords(user_input)
+    print(keywords)
 
     keyword_related_answers = {}
     y = (len(keywords) // 11) + 1
-    z = len(base_keywords) + len(base_keywords) // 2
+    z = len(tach_tu_khoa(user_input)) + len(tach_tu_khoa(user_input))//2
     print("Ngưỡng count:", y, "| Số từ lấy để đếm:", z)
 
     keyword_positions = find_keyword_positions2(text, keywords)
@@ -478,7 +484,7 @@ def traloi_theo_ngucanh2_1(user_input, text, k=0.75):
     if selected_answers:
 
         paragraph = clean_paragraph(selected_answers)  # Không shuffle
-        if len(paragraph) > 1000:
+        if len(paragraph) > 2000:
             paragraph = paragraph[:1000].rsplit(".", 1)[0] + "."
         return paragraph
     return None

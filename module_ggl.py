@@ -24,17 +24,16 @@ STOP_PHRASES = [
 ]
 # Bộ mở rộng từ khóa theo loại câu hỏi
 BO_TU_MO_RONG = {
-    "ai": ["ai", "người", "tên", "gọi là", "ông", "bà", "cô", "chú"],
     "trong": ["ngoài", "trên", "dưới", "trong"],
-    "đó là gì": ["đó là", "gọi là", "được xem là", "có nghĩa là", "định nghĩa"],
-    "ở đâu": ["ở", "tại", "sống", "nơi", "địa điểm", "quê", "xuất thân"],
+    "đó là gì": ["đó là", "gọi là", "được xem là", "đây là"],
+    "ở đâu": ["ở", "tại", "nơi", "địa điểm", "quê", "xuất thân"],
     "khi nào": ["khi", "năm", "tháng", "ngày", "lúc", "thời gian", "thời điểm"],
     "vì sao": ["vì", "do", "tại vì", "bởi vì", "nguyên nhân", "lý do"],
     "như thế nào": ["như thế này", "cách", "ra sao", "mô tả", "kiểu", "dạng", "đặc điểm"],
     "bao nhiêu": ["số", "tổng", "khoảng" "chừng"],
     "đang làm gì": ["đang làm", "hành động", "thực hiện", "công việc"],
     "phu nhân": ["phu nhân", "vợ"],
-    "chồng": ["chồng", "ông xã", "phu quân"],
+    "chồng": ["chồng", "phu quân"],
     "triều đình": ["triều đình", "vua quan", "hoàng vương", "vua chúa", "hoàng triều"],
     "ông": ["ông", "cụ", "ngài", "lão"],
     "bà": ["bà", "cô", "mợ", "thím", "chị", "dì"],

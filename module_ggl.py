@@ -30,7 +30,7 @@ BO_TU_MO_RONG = {
     "khi nào": ["khi", "năm", "tháng", "ngày", "lúc", "thời gian", "thời điểm"],
     "vì sao": ["vì", "do", "tại vì", "bởi vì", "nguyên nhân", "lý do"],
     "như thế nào": ["như thế này", "cách", "ra sao", "mô tả", "kiểu", "dạng", "đặc điểm"],
-    "bao nhiêu": ["số", "tổng", "khoảng" "chừng"],
+    "bao nhiêu": ["số", "tổng", "khoảng", "chừng"],
     "đang làm gì": ["đang làm", "hành động", "thực hiện", "công việc"],
     "phu nhân": ["phu nhân", "vợ"],
     "chồng": ["chồng", "phu quân"],
@@ -40,7 +40,8 @@ BO_TU_MO_RONG = {
     "đình": ["đình", "đền", "miếu", "chùa", "nơi thờ"],
     "quan": ["quan", "quan lại", "quan chức", "chức tước", "viên chức"],
     "quê": ["quê", "quán", "nơi sinh", "sinh sống", "hiện ở tại"],
-    "chết": ["chết", "mất", "tử vong", "qua đời"]
+    "chết": ["chết", "mất", "tử vong", "qua đời"],
+    "hiện nay": ["đang", "hiện nay"]
 }
 
 
@@ -147,7 +148,7 @@ def xuli_doanvan_ngu_canh(user_input):
                 max_similarity = similarity
                 best_paragraph = paragraph
 
-    if max_similarity >= 0.9:
+    if max_similarity >= 0.:
         print("đoạn  văn lọc được: ", best_paragraph.strip())
         return best_paragraph.strip()
     else:
@@ -391,7 +392,7 @@ def traloi_theo_ngucanh2_1(user_input, text, k=0.75):
     print(keywords)
 
     keyword_related_answers = {}
-    y = (len(keywords) // 11) + 1
+    y = (len(keywords) // 20) + 1
     z = len(tach_tu_khoa(user_input)) + len(tach_tu_khoa(user_input))//2
     print("Ngưỡng count:", y, "| Số từ lấy để đếm:", z)
 
@@ -432,7 +433,7 @@ def traloi_theo_ngucanh2_1(user_input, text, k=0.75):
             words_in_related_answer) if word in keywords]
         if keyword_indices:
             span = keyword_indices[-1] - keyword_indices[0] + 1
-            density = count / span if span > 0 else 0
+            density = len(keyword_indices) / span if span > 0 else 0
         else:
             density = 0
 

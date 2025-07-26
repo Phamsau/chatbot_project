@@ -148,7 +148,7 @@ def xuli_doanvan_ngu_canh(user_input):
                 max_similarity = similarity
                 best_paragraph = paragraph
 
-    if max_similarity >= 0.:
+    if max_similarity >= 0.87:
         print("đoạn  văn lọc được: ", best_paragraph.strip())
         return best_paragraph.strip()
     else:

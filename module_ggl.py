@@ -13,7 +13,7 @@ previous_answers = {}
 # Stopwords để loại bỏ từ khóa nhiễu
 STOPWORDS = {
     "gì", "nào", "ai", "sao", "à", "và", "là", "các",
-    "ấy", "thì", "ở", "đâu", "vì", "ra", "nó", "nhưng", "những", "hả", "sẽ", "mấy", "không"
+    "ấy", "thì", "ở", "đâu", "vì", "ra", "nó", "nhưng", "những", "hả", "sẽ", "mấy"
 }
 STOP_PHRASES = [
     "bao nhiêu", "như thế nào", "làm sao", "ở đâu", "khi nào", "là gì", "tại sao", "vì sao", "tại vì sao",
@@ -393,7 +393,8 @@ def traloi_theo_ngucanh2_1(user_input, text, k=0.75):
 
     keyword_related_answers = {}
     y = (len(keywords) // 20) + 1
-    z = len(tach_tu_khoa(user_input)) + len(tach_tu_khoa(user_input))//2
+    z = 4 if len(tach_tu_khoa(user_input)) == 2 else (
+        len(tach_tu_khoa(user_input)) + len(tach_tu_khoa(user_input))//2)
     print("Ngưỡng count:", y, "| Số từ lấy để đếm:", z)
 
     keyword_positions = find_keyword_positions2(text, keywords)

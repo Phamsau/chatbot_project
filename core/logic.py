@@ -21,22 +21,28 @@ def tach_tu_khoa(text):
     return cum_tu_khoa
 
 
-def capnhat(user_input, user_response, history):
-    """Cập nhật đoạn hội thoại + xử lý câu trả lời sao cho đẹp"""
+def capnhat(user_input, user_response, history, sources=None):
+    """Cập nhật đoạn hội thoại + xử lý câu trả lời sao cho đẹp, có trích nguồn"""
     if user_response:
-        chatgpt_output = lam_dep_cau_tra_loi_groq(
-            user_input, user_response, history
+        if sources:
+            noi_dung_tham_khao = user_response + "\n\n🔗 Nguồn tham khảo:\n" + \
+                "\n".join(f"- {src}" for src in sources)
+        else:
+            noi_dung_tham_khao = user_response
+
+        chatgpt_output, danh_tu_rieng = lam_dep_cau_tra_loi_groq(
+            user_input, noi_dung_tham_khao, history
         )
 
-        # Cập nhật lại lịch sử: user → assistant
         history += [
             {"role": "user", "content": user_input},
             {"role": "assistant", "content": chatgpt_output}
         ]
     else:
         chatgpt_output = f"Xin lỗi, tôi không tìm thấy thông tin cho: {user_input}"
+        danh_tu_rieng = []
 
-    return chatgpt_output, history
+    return chatgpt_output, history, danh_tu_rieng
 
 
 def tieptuc_traloi(all_text, current_position):

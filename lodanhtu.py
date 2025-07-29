@@ -37,9 +37,10 @@ def filter_verbs():
 if __name__ == "__main__":
 
     speak_text("Mời bạn bắt đầu đọc một câu")
-    input_sentence = recognize_speech().strip().replace('\n', '')
+    input_sentence = input("User: ").strip().replace('\n', '')
     # Phân tích cú pháp câu để đánh dấu loại từ (POS tagging)
     tagged_words = pos_tag(input_sentence)
+    print(tagged_words)
     nouns = filter_nouns()
     adjectives = filter_adjectives()
     verbs = filter_verbs()

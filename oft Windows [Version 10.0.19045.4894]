@@ -1,0 +1,1067 @@
+[1mdiff --git a/core/__pycache__/logic.cpython-311.pyc b/core/__pycache__/logic.cpython-311.pyc[m
+[1mindex 59d40f7..ad1e95c 100644[m
+Binary files a/core/__pycache__/logic.cpython-311.pyc and b/core/__pycache__/logic.cpython-311.pyc differ
+[1mdiff --git a/core/groq.py b/core/groq.py[m
+[1mindex a8e1a32..48a93aa 100644[m
+[1m--- a/core/groq.py[m
+[1m+++ b/core/groq.py[m
+[36m@@ -1,6 +1,7 @@[m
+ import os[m
+[32m+[m[32mimport re[m
+ from dotenv import load_dotenv[m
+[31m-from openai import OpenAI  # ✅ đúng cú pháp cho SDK mới[m
+[32m+[m[32mfrom openai import OpenAI[m
+ [m
+ load_dotenv()[m
+ [m
+[36m@@ -10,27 +11,23 @@[m [mclient = OpenAI([m
+ )[m
+ [m
+ [m
+[31m-def loc_lich_su(lich_su):[m
+[31m-    """Lọc bỏ các câu trả lời xin lỗi không cần thiết để tránh lặp lại"""[m
+[31m-    return [[m
+[31m-        msg for msg in lich_su[m
+[31m-        if not ([m
+[31m-            msg['role'] == 'assistant' and[m
+[31m-            msg['content'].strip().lower().startswith("xin lỗi")[m
+[31m-        )[m
+[31m-    ][m
+[31m-[m
+[31m-[m
+ def lam_dep_cau_tra_loi_groq(cau_hoi, noi_dung_tham_khao, ngu_canh=None):[m
+[32m+[m[32m    def loc_lich_su(lich_su):[m
+[32m+[m[32m        return [[m
+[32m+[m[32m            msg for msg in lich_su[m
+[32m+[m[32m            if not ([m
+[32m+[m[32m                msg['role'] == 'assistant' and[m
+[32m+[m[32m                msg['content'].strip().lower().startswith("xin lỗi")[m
+[32m+[m[32m            )[m
+[32m+[m[32m        ][m
+ [m
+     ngu_canh = loc_lich_su(ngu_canh or [])[m
+ [m
+[31m-    # Xây messages với prompt rõ ràng, hạn chế xin lỗi[m
+     messages = [[m
+         {"role": "system", "content": ([m
+             "Bạn là một trợ lý AI tiếng Việt đáng tin cậy. "[m
+[31m-            "Chỉ trả lời dựa trên thông tin đã có. "[m
+[31m-            "Không cần xin lỗi nếu không thực sự có lỗi."[m
+[32m+[m[32m            "Chỉ trả lời dựa trên thông tin có thật. "[m
+[32m+[m[32m            "Không bịa chuyện và không xin lỗi khi không cần thiết."[m
+         )}[m
+     ] + ngu_canh[m
+ [m
+[36m@@ -39,19 +36,34 @@[m [mdef lam_dep_cau_tra_loi_groq(cau_hoi, noi_dung_tham_khao, ngu_canh=None):[m
+     if noi_dung_tham_khao:[m
+         messages.append({"role": "assistant", "content": noi_dung_tham_khao})[m
+ [m
+[31m-    # Yêu cầu làm rõ lại[m
+     messages.append({[m
+         "role": "user",[m
+[31m-        "content": "Hãy viết lại câu trả lời mạch lạc, rõ ràng, thân thiện, chính xác thông tin tra cứu đươc, không bịa chuyện. Không lặp lại xin lỗi nhiều lần."[m
+[32m+[m[32m        "content": ([m
+[32m+[m[32m            "Viết lại câu trả lời mạch lạc, rõ ràng, thân thiện, chính xác và phải trích nguồn nếu có"[m
+[32m+[m[32m            "yêu cầu: Tên nhân vật phải đủ thông tin mới nêu, không gán ghép, không được đoán hay bịa đặt tên nhân vật khi thông tin không rõ ràng. "[m
+[32m+[m[32m            "Cuối cùng, ghi rõ dòng sau:\n"[m
+[32m+[m[32m            "[DANH_TU_RIENG: tên đầy đủ hoặc chủ đề chính mà người dùng đang đề cập nếu có]"[m
+[32m+[m[32m        )[m
+     })[m
+ [m
+     try:[m
+         ket_qua = client.chat.completions.create([m
+             model="llama3-8b-8192",[m
+             messages=messages,[m
+[31m-            temperature=0.7,  # Tăng chút để văn phong tự nhiên[m
+[31m-            max_tokens=300[m
+[32m+[m[32m            temperature=0.7,[m
+[32m+[m[32m            max_tokens=400[m
+         )[m
+[31m-        return ket_qua.choices[0].message.content.strip()[m
+[32m+[m[32m        content = ket_qua.choices[0].message.content.strip()[m
+[32m+[m
+[32m+[m[32m        match = re.search(r"\[DANH_TU_RIENG:(.*?)\]\s*$", content, re.DOTALL)[m
+[32m+[m[32m        danh_tu_rieng = [][m
+[32m+[m[32m        if match:[m
+[32m+[m[32m            danh_tu_rieng = list([m
+[32m+[m[32m                {ten.strip() for ten in match.group(1).split(",") if ten.strip()}[m
+[32m+[m[32m            )[m
+[32m+[m[32m            content = content[:match.start()].strip()[m
+[32m+[m
+[32m+[m[32m        return content, danh_tu_rieng[m
+[32m+[m
+     except Exception as e:[m
+[31m-        return f"[Lỗi từ Groq] {e}"[m
+[32m+[m[32m        return f"[Lỗi từ Groq] {e}", [][m
+[1mdiff --git a/core/logic.py b/core/logic.py[m
+[1mindex ef7383f..05ad8a3 100644[m
+[1m--- a/core/logic.py[m
+[1m+++ b/core/logic.py[m
+[36m@@ -21,22 +21,28 @@[m [mdef tach_tu_khoa(text):[m
+     return cum_tu_khoa[m
+ [m
+ [m
+[31m-def capnhat(user_input, user_response, history):[m
+[31m-    """Cập nhật đoạn hội thoại + xử lý câu trả lời sao cho đẹp"""[m
+[32m+[m[32mdef capnhat(user_input, user_response, history, sources=None):[m
+[32m+[m[32m    """Cập nhật đoạn hội thoại + xử lý câu trả lời sao cho đẹp, có trích nguồn"""[m
+     if user_response:[m
+[31m-        chatgpt_output = lam_dep_cau_tra_loi_groq([m
+[31m-            user_input, user_response, history[m
+[32m+[m[32m        if sources:[m
+[32m+[m[32m            noi_dung_tham_khao = user_response + "\n\n🔗 Nguồn tham khảo:\n" + \[m
+[32m+[m[32m                "\n".join(f"- {src}" for src in sources)[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            noi_dung_tham_khao = user_response[m
+[32m+[m
+[32m+[m[32m        chatgpt_output, danh_tu_rieng = lam_dep_cau_tra_loi_groq([m
+[32m+[m[32m            user_input, noi_dung_tham_khao, history[m
+         )[m
+ [m
+[31m-        # Cập nhật lại lịch sử: user → assistant[m
+         history += [[m
+             {"role": "user", "content": user_input},[m
+             {"role": "assistant", "content": chatgpt_output}[m
+         ][m
+     else:[m
+         chatgpt_output = f"Xin lỗi, tôi không tìm thấy thông tin cho: {user_input}"[m
+[32m+[m[32m        danh_tu_rieng = [][m
+ [m
+[31m-    return chatgpt_output, history[m
+[32m+[m[32m    return chatgpt_output, history, danh_tu_rieng[m
+ [m
+ [m
+ def tieptuc_traloi(all_text, current_position):[m
+[1mdiff --git a/ghidulieu.py b/ghidulieu.py[m
+[1mindex 82b8a42..d22152e 100644[m
+[1m--- a/ghidulieu.py[m
+[1m+++ b/ghidulieu.py[m
+[36m@@ -1,24 +1,24 @@[m
+[32m+[m[32m# ngu_canh_truy_van.py[m
+ [m
+[31m-import pandas as pd[m
+[32m+[m[32mdef co_can_bo_sung_chu_de(user_input: str) -> bool:[m
+[32m+[m[32m    """[m
+[32m+[m[32m    Kiểm tra xem user_input có chứa đại từ hoặc từ chỉ mơ hồ,[m
+[32m+[m[32m    nếu có thì cần bổ sung chủ đề (danh từ riêng) vào câu hỏi.[m
+[32m+[m[32m    """[m
+[32m+[m[32m    tu_dai_dien = [[m
+[32m+[m[32m        "ông ấy", "bà ấy", "họ", "nó", "cô ấy", "cậu ấy", "người ấy", "anh ta", "chị ta",[m
+[32m+[m[32m        "vị đó", "nhân vật đó", "vật đó", "vật này", "chuyện đó", "việc ấy", "chủ đề đó",[m
+[32m+[m[32m        "nó là gì", "việc đó", "hành động đó", "điều đó", "trường hợp đó"[m
+[32m+[m[32m    ][m
+[32m+[m[32m    user_input = user_input.lower()[m
+[32m+[m[32m    return any(cum in user_input for cum in tu_dai_dien)[m
+ [m
+ [m
+[31m-def ghi_dulieu(user_input, chatgpt_output):[m
+[31m-    new_data = pd.DataFrame([m
+[31m-        {"Question": [user_input], "Answer": [chatgpt_output]})[m
+[31m-    existing_data = pd.read_excel('sau.xlsx') if pd.read_excel([m
+[31m-        'sau.xlsx') is not None else pd.DataFrame()[m
+[31m-    updated_data = pd.concat([m
+[31m-        [existing_data, new_data], ignore_index=True)[m
+[31m-    updated_data.to_excel('sau.xlsx', index=False)[m
+[31m-[m
+[31m-[m
+[31m-def doc_dulieu():[m
+[31m-    # Đọc dữ liệu từ file Excel[m
+[31m-    data = pd.read_excel('sau.xlsx')[m
+[31m-    # Chuyển đổi các kiểu dữ liệu thành chuỗi văn bản[m
+[31m-    data['Question'] = data['Question'].astype(str)[m
+[31m-    data['Answer'] = data['Answer'].astype(str)[m
+[31m-    qa_dict = data.set_index('Question')['Answer'].to_dict()[m
+[31m-    # Tạo từ điển qa_dict từ dữ liệu[m
+[31m-    # tu_dien = new_func(data)[m
+[31m-    return qa_dict[m
+[32m+[m[32mdef tao_truy_van_bo_sung(user_input: str, danh_tu_rieng_truoc_do: str = None) -> str:[m
+[32m+[m[32m    """[m
+[32m+[m[32m    Nếu câu hỏi cần thêm chủ đề thì nối chủ đề cũ vào đầu câu hỏi.[m
+[32m+[m[32m    Nếu không, trả lại nguyên văn user_input.[m
+[32m+[m[32m    """[m
+[32m+[m[32m    if danh_tu_rieng_truoc_do and co_can_bo_sung_chu_de(user_input):[m
+[32m+[m[32m        return f"{danh_tu_rieng_truoc_do.strip()} {user_input.strip()}"[m
+[32m+[m[32m    return user_input.strip()[m
+[1mdiff --git a/keyword_expander.py b/keyword_expander.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..1d22105[m
+[1m--- /dev/null[m
+[1m+++ b/keyword_expander.py[m
+[36m@@ -0,0 +1,97 @@[m
+[32m+[m[32mimport re[m
+[32m+[m[32m# Stopwords để loại bỏ từ khóa nhiễu[m
+[32m+[m[32mSTOPWORDS = {[m
+[32m+[m[32m    "gì", "nào", "ai", "sao", "à", "và", "các", "của", "là",[m
+[32m+[m[32m    "ấy", "thì", "ở", "đâu", "ra", "nó", "nhưng", "những", "hả", "sẽ", "mấy"[m
+[32m+[m[32m}[m
+[32m+[m[32mSTOP_PHRASES = [[m
+[32m+[m[32m    "bao nhiêu", "như thế nào", "làm sao", "ở đâu", "khi nào", "là gì", "tại sao", "vì sao", "tại vì sao",[m
+[32m+[m[32m    "ai là", "ai đã", "ai đang", "có đúng không", "có phải là", "có thể", "có hay không", "có không",[m
+[32m+[m[32m    "nào là", "cái gì", "gì vậy", "thế nào", "cách nào", "phải không", "ra sao", "để làm gì",[m
+[32m+[m[32m    "mấy giờ", "mấy tuổi", "bao nhiêu", "kéo dài bao lâu",[m
+[32m+[m[32m    "bằng cách nào", "vì điều gì", "có nghĩa là gì", "được không", "được chứ", "bạn có biết", "là gì", "là ai", "có biết"[m
+[32m+[m[32m][m
+[32m+[m[32m# Bộ mở rộng từ khóa theo loại câu hỏi[m
+[32m+[m[32mBO_TU_MO_RONG = {[m
+[32m+[m[32m    "trong": ["ngoài", "trên", "dưới", "trong"],[m
+[32m+[m[32m    "đó là gì": ["đó là", "gọi là", "được xem là", "đây là"],[m
+[32m+[m[32m    "ở đâu": ["ở", "tại", "nơi", "địa điểm", "quê", "xuất thân"],[m
+[32m+[m[32m    "khi nào": ["khi", "năm", "tháng", "ngày", "lúc", "thời gian", "thời điểm"],[m
+[32m+[m[32m    "vì sao": ["vì", "do", "tại vì", "bởi vì", "nguyên nhân", "lý do"],[m
+[32m+[m[32m    "như thế nào": ["như thế này", "cách", "ra sao", "mô tả", "kiểu", "dạng", "đặc điểm"],[m
+[32m+[m[32m    "bao nhiêu": ["số", "tổng", "khoảng", "chừng"],[m
+[32m+[m[32m    "đang làm gì": ["đang làm", "hành động", "thực hiện", "công việc"],[m
+[32m+[m[32m    "phu nhân": ["phu nhân", "vợ"],[m
+[32m+[m[32m    "chồng": ["chồng", "phu quân"],[m
+[32m+[m[32m    "triều đình": ["triều đình", "vua quan", "hoàng vương", "vua chúa", "hoàng triều"],[m
+[32m+[m[32m    "ông": ["ông", "cụ", "ngài", "lão"],[m
+[32m+[m[32m    "bà": ["bà", "cô", "mợ", "thím", "chị", "dì"],[m
+[32m+[m[32m    "đình": ["đình", "đền", "miếu", "chùa", "nơi thờ"],[m
+[32m+[m[32m    "quan": ["quan", "quan lại", "quan chức", "chức tước", "viên chức"],[m
+[32m+[m[32m    "quê": ["quê", "quán", "nơi sinh", "sinh sống", "hiện ở tại"],[m
+[32m+[m[32m    "chết": ["chết", "mất", "tử vong", "qua đời"],[m
+[32m+[m[32m    "hiện nay": ["đang", "hiện nay"][m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef tach_tu_khoa(text):[m
+[32m+[m[32m    """Tách từ từ văn bản và loại bỏ stopwords."""[m
+[32m+[m[32m    words = text.split()[m
+[32m+[m[32m    keywords = [[m
+[32m+[m[32m        word.lower().rstrip(".,?!")[m
+[32m+[m[32m        for word in words[m
+[32m+[m[32m        if word.lower().rstrip(".,?!") not in STOPWORDS[m
+[32m+[m[32m    ][m
+[32m+[m[32m    return keywords if keywords else [[m
+[32m+[m[32m        word.lower().rstrip(".,?!") for word in words[m
+[32m+[m[32m    ][m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef tach_tu_khoa(text: str):[m
+[32m+[m[32m    """Tách các từ có nghĩa, loại bỏ stopwords đơn."""[m
+[32m+[m[32m    words = text.split()[m
+[32m+[m[32m    keywords = [[m
+[32m+[m[32m        word.lower().rstrip(".,?!")[m
+[32m+[m[32m        for word in words[m
+[32m+[m[32m        if word.lower().rstrip(".,?!") not in STOPWORDS[m
+[32m+[m[32m    ][m
+[32m+[m[32m    return keywords if keywords else [w.lower().rstrip(".,?!") for w in words][m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef loc_tu_quan_trong(cau_hoi: str):[m
+[32m+[m[32m    """Loại cụm từ dư thừa và chỉ giữ từ trọng tâm."""[m
+[32m+[m[32m    cau_hoi = cau_hoi.lower()[m
+[32m+[m[32m    cau_hoi = re.sub(r"[^\w\s]", "", cau_hoi)[m
+[32m+[m
+[32m+[m[32m    for phrase in STOP_PHRASES:[m
+[32m+[m[32m        cau_hoi = cau_hoi.replace(phrase, "")[m
+[32m+[m
+[32m+[m[32m    words = cau_hoi.split()[m
+[32m+[m[32m    return [w for w in words if w not in STOPWORDS][m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef expand_keywords(user_input: str):[m
+[32m+[m[32m    """[m
+[32m+[m[32m    Trả về tập từ khóa mở rộng để tìm kiếm:[m
+[32m+[m[32m    - Tách từ chính trong input[m
+[32m+[m[32m    - Mở rộng theo nhóm nghĩa ưu tiên[m
+[32m+[m[32m    - Fix: không khớp sai từ do trùng chuỗi con (vd: 'ông' trong 'công')[m
+[32m+[m[32m    """[m
+[32m+[m[32m    base_keywords = tach_tu_khoa(user_input)[m
+[32m+[m[32m    question_lower = user_input.lower()[m
+[32m+[m[32m    mo_rong = [][m
+[32m+[m
+[32m+[m[32m    for nhom, cum_tu in BO_TU_MO_RONG.items():[m
+[32m+[m[32m        for phrase in cum_tu:[m
+[32m+[m[32m            # Khớp chính xác từ/cụm bằng regex để tránh khớp chuỗi con[m
+[32m+[m[32m            pattern = r'\b' + re.escape(phrase) + r'\b'[m
+[32m+[m[32m            if re.search(pattern, question_lower):[m
+[32m+[m[32m                mo_rong.extend(cum_tu)[m
+[32m+[m[32m                break[m
+[32m+[m
+[32m+[m[32m    # Tách cụm mở rộng thành từ đơn (giữ như code gốc)[m
+[32m+[m[32m    tu_don_tu_cum = [][m
+[32m+[m[32m    for cum in mo_rong:[m
+[32m+[m[32m        tu_don_tu_cum.extend(cum.lower().split())[m
+[32m+[m
+[32m+[m[32m    return list(set(base_keywords + tu_don_tu_cum))[m
+[1mdiff --git a/lodanhtu.py b/lodanhtu.py[m
+[1mindex 7877fe0..c55f559 100644[m
+[1m--- a/lodanhtu.py[m
+[1m+++ b/lodanhtu.py[m
+[36m@@ -37,9 +37,10 @@[m [mdef filter_verbs():[m
+ if __name__ == "__main__":[m
+ [m
+     speak_text("Mời bạn bắt đầu đọc một câu")[m
+[31m-    input_sentence = recognize_speech().strip().replace('\n', '')[m
+[32m+[m[32m    input_sentence = input("User: ").strip().replace('\n', '')[m
+     # Phân tích cú pháp câu để đánh dấu loại từ (POS tagging)[m
+     tagged_words = pos_tag(input_sentence)[m
+[32m+[m[32m    print(tagged_words)[m
+     nouns = filter_nouns()[m
+     adjectives = filter_adjectives()[m
+     verbs = filter_verbs()[m
+[1mdiff --git a/main.py b/main.py[m
+[1mindex c9a540b..11cb2ca 100644[m
+[1m--- a/main.py[m
+[1m+++ b/main.py[m
+[36m@@ -6,10 +6,10 @@[m [mfrom module_ggl import ([m
+ )[m
+ from module_xuli import hien_thi_vien_va_con_tro[m
+ from nghe_noi import recognize_speech1, speak_text1, speak_text[m
+[31m-import pandas as pd[m
+ from datetime import datetime[m
+ from core.handle_input import sau, bay, tu_dien, ghi_dulieu_txt[m
+ from core.logic import tieptuc_traloi, tach_tu_khoa, capnhat[m
+[32m+[m[32mfrom ngu_canh_truy_van import tao_truy_van_bo_sung[m
+ # Trạng thái phiên trò chuyện (session đơn giản trong bộ nhớ)[m
+ user_context = {[m
+     "tiep": None,[m
+[36m@@ -28,14 +28,20 @@[m [mdef chatbot_response(user_input):[m
+         if not user_input:[m
+             return "Xin vui lòng cho biết yêu cầu của bạn"[m
+ [m
+[32m+[m[32m        # Khởi tạo context nếu chưa có[m
+         if "history" not in user_context:[m
+             user_context["history"] = [][m
+[32m+[m[32m        if "danh_tu_rieng_truoc_do" not in user_context:[m
+[32m+[m[32m            user_context["danh_tu_rieng_truoc_do"] = None[m
+ [m
+[32m+[m[32m        # Xóa ngữ cảnh[m
+         if user_input == "xóa ngữ cảnh":[m
+             xoa_ngucanh()[m
+             user_context["history"] = [][m
+[32m+[m[32m            user_context["danh_tu_rieng_truoc_do"] = None[m
+             return "Ngữ cảnh đã được xóa."[m
+ [m
+[32m+[m[32m        # Tiếp tục đoạn văn nếu có[m
+         if user_input == "tiếp tục" and user_context.get("dk"):[m
+             tiep = user_context.get("tiep")[m
+             current_position = user_context.get("current_position", 0)[m
+[36m@@ -45,27 +51,32 @@[m [mdef chatbot_response(user_input):[m
+             else:[m
+                 return "Không có văn bản để trích xuất."[m
+ [m
+[31m-        # Tra trong ngữ cảnh trước[m
+[31m-        text = xuli_doanvan_ngu_canh(user_input)[m
+[32m+[m[32m        # Xử lý từ ngữ cảnh cũ[m
+[32m+[m[32m        text, nguon = xuli_doanvan_ngu_canh(user_input)[m
+         if text:[m
+             user_response = tra_loi_tho(user_input, text)[m
+[31m-            chatgpt_output, updated_history = capnhat([m
+[31m-                user_input, user_response, user_context["history"])[m
+[32m+[m[32m            chatgpt_output, updated_history, danh_tu_rieng_moi = capnhat([m
+[32m+[m[32m                user_input, user_response, user_context["history"], nguon)[m
+             user_context["history"] = updated_history[-20:][m
+[32m+[m[32m            if danh_tu_rieng_moi:[m
+[32m+[m[32m                user_context["danh_tu_rieng_truoc_do"] = danh_tu_rieng_moi[-1][m
+             return chatgpt_output[m
+ [m
+[31m-        # Tra theo từ điển nội bộ[m
+[32m+[m[32m        # Từ điển nội bộ[m
+         ct1 = sau(user_input)[m
+         ct2 = bay(user_input)[m
+ [m
+         if ct1 and ct2:[m
+             output = tu_dien.get(ct1)[m
+             luu_ngu_canh(user_input, output)[m
+[31m-            chatgpt_output, updated_history = capnhat([m
+[32m+[m[32m            chatgpt_output, updated_history, danh_tu_rieng_moi = capnhat([m
+                 user_input, output, user_context["history"])[m
+             user_context["history"] = updated_history[-20:][m
+[32m+[m[32m            if danh_tu_rieng_moi:[m
+[32m+[m[32m                user_context["danh_tu_rieng_truoc_do"] = danh_tu_rieng_moi[-1][m
+             return chatgpt_output[m
+ [m
+[32m+[m[32m        # Một số câu hỏi đơn giản[m
+         if ct1 in danh_muc():[m
+             if ct1 == "ngày mấy":[m
+                 return f"Hôm nay là {datetime.now().strftime('%d/%m/%Y')}"[m
+[36m@@ -73,16 +84,19 @@[m [mdef chatbot_response(user_input):[m
+                 return f"Bây giờ là {datetime.now().strftime('%H:%M')}"[m
+             return tu_dien.get(ct1)[m
+ [m
+[31m-        # Cuối cùng: tra Google[m
+[31m-        user_response, tiep = search_google(user_input)[m
+[32m+[m[32m        # Cuối cùng, truy vấn Google[m
+[32m+[m[32m        truy_van = tao_truy_van_bo_sung([m
+[32m+[m[32m            user_input, user_context["danh_tu_rieng_truoc_do"])[m
+[32m+[m[32m        user_response, tiep, nguon = search_google(truy_van, user_input)[m
+         user_context["tiep"] = tiep[m
+         user_context["dk"] = True[m
+         user_context["current_position"] = len(user_response.split())[m
+ [m
+[31m-        chatgpt_output, updated_history = capnhat([m
+[31m-            user_input, user_response, user_context["history"])[m
+[32m+[m[32m        chatgpt_output, updated_history, danh_tu_rieng_moi = capnhat([m
+[32m+[m[32m            user_input, user_response, user_context["history"], nguon)[m
+         user_context["history"] = updated_history[-20:][m
+[31m-[m
+[32m+[m[32m        if danh_tu_rieng_moi:[m
+[32m+[m[32m            user_context["danh_tu_rieng_truoc_do"] = danh_tu_rieng_moi[-1][m
+         # Ghi dữ liệu mới vào file[m
+         # ghi_dulieu_txt(user_input, chatgpt_output)[m
+ [m
+[36m@@ -114,6 +128,7 @@[m [mdef main():[m
+     no_speech_count = 0[m
+     tiep = ""[m
+     history = [][m
+[32m+[m[32m    danh_tu_rieng_truoc_do = [][m
+ [m
+     try:[m
+         speak_text("Xin chào, tôi giúp được gì cho bạn?")[m
+[36m@@ -145,6 +160,7 @@[m [mdef main():[m
+                 chatgpt_output = "Ok, Ngữ cảnh cuộc trò chuyện đã xóa"[m
+                 xoa_ngucanh()[m
+                 history = [][m
+[32m+[m[32m                danh_tu_rieng_truoc_do = [][m
+ [m
+             elif user_input == "":[m
+                 chatgpt_output = "Xin vui lòng cho biết yêu cầu của bạn"[m
+[36m@@ -152,26 +168,31 @@[m [mdef main():[m
+             else:[m
+                 dk = False[m
+                 user_input = user_input.lower().strip()[m
+[31m-                text = xuli_doanvan_ngu_canh(user_input)[m
+[32m+[m[32m                text, nguon = xuli_doanvan_ngu_canh(user_input)[m
+                 best_related_answer = None[m
+[32m+[m[32m                print(nguon)[m
+ [m
+                 if text:[m
+[31m-                    best_related_answer = tra_loi_tho(user_input, text)[m
+[32m+[m[32m                    best_related_answer = tra_loi_tho([m
+[32m+[m[32m                        user_input, text)[m
+ [m
+                 if best_related_answer:[m
+[31m-                    chatgpt_output, updated_history = capnhat([m
+[31m-                        user_input, best_related_answer, history)[m
+[32m+[m[32m                    # print([m
+[32m+[m[32m                    # "kết quả trả lời sau khi tra ngữ cảnh qua hàm tra_loi_tho file main(): ", best_related_answer)[m
+[32m+[m[32m                    chatgpt_output, updated_history, danh_tu_rieng_moi = capnhat([m
+[32m+[m[32m                        user_input, best_related_answer, history, nguon)[m
+                     history = updated_history[-20:][m
+[31m-[m
+[32m+[m[32m                    danh_tu_rieng_truoc_do = danh_tu_rieng_moi[-1] if danh_tu_rieng_moi else None[m
+                 else:[m
+                     ct1 = sau(user_input)[m
+                     ct2 = bay(user_input)[m
+                     print(ct1, ct2)[m
+ [m
+                     if ct1 and ct2 and ct1 in tu_dien and ct1 in ct2:[m
+[31m-                        chatgpt_output, updated_history = capnhat([m
+[32m+[m[32m                        chatgpt_output, updated_history, danh_tu_rieng_moi = capnhat([m
+                             user_input, tu_dien[ct1], history)[m
+                         history = updated_history[-20:][m
+[32m+[m[32m                        danh_tu_rieng_truoc_do = danh_tu_rieng_moi[-1] if danh_tu_rieng_moi else None[m
+                         luu_ngu_canh(user_input, chatgpt_output)[m
+ [m
+                     elif ct1 in danh_muc() and not ct2:[m
+[36m@@ -183,16 +204,22 @@[m [mdef main():[m
+                             chatgpt_output = tu_dien.get(ct1)[m
+ [m
+                     else:[m
+[31m-                        user_response, tiep = search_google(user_input)[m
+[32m+[m[32m                        truy_van = tao_truy_van_bo_sung([m
+[32m+[m[32m                            user_input, danh_tu_rieng_truoc_do)[m
+[32m+[m[32m                        user_response, tiep, nguon = search_google([m
+[32m+[m[32m                            truy_van, user_input)[m
+[32m+[m
+                         dk = True[m
+                         current_position = len(user_response.split())[m
+[31m-                        chatgpt_output, updated_history = capnhat([m
+[31m-                            user_input, user_response, history)[m
+[32m+[m[32m                        chatgpt_output, updated_history, danh_tu_rieng_moi = capnhat([m
+[32m+[m[32m                            user_input, user_response, history, nguon)[m
+                         history = updated_history[-20:][m
+[32m+[m[32m                        danh_tu_rieng_truoc_do = danh_tu_rieng_moi[-1] if danh_tu_rieng_moi else None[m
+ [m
+                         # 🔁 Lưu dữ liệu vào file .txt nếu là từ Google[m
+                         # ghi_dulieu_txt(user_input, chatgpt_output)[m
+[31m-[m
+[32m+[m[32m            print([m
+[32m+[m[32m                "kết quả test thử user_input với hàm lay_tham_chieu_theo_dai_tu: ", danh_tu_rieng_truoc_do)[m
+             hien_thi_vien_va_con_tro(chatgpt_output)[m
+ [m
+             if not cv:[m
+[1mdiff --git a/module_ggl.py b/module_ggl.py[m
+[1mindex f5f7923..a2f207b 100644[m
+[1m--- a/module_ggl.py[m
+[1m+++ b/module_ggl.py[m
+[36m@@ -8,87 +8,10 @@[m [mimport requests[m
+ from bs4 import BeautifulSoup[m
+ import re[m
+ import time[m
+[31m-previous_answers = {}[m
+[32m+[m[32mfrom functools import lru_cache[m
+[32m+[m[32mfrom keyword_expander import tach_tu_khoa, loc_tu_quan_trong, expand_keywords[m
+ [m
+[31m-# Stopwords để loại bỏ từ khóa nhiễu[m
+[31m-STOPWORDS = {[m
+[31m-    "gì", "nào", "ai", "sao", "à", "và", "là", "các",[m
+[31m-    "ấy", "thì", "ở", "đâu", "vì", "ra", "nó", "nhưng", "những", "hả", "sẽ", "mấy", "không"[m
+[31m-}[m
+[31m-STOP_PHRASES = [[m
+[31m-    "bao nhiêu", "như thế nào", "làm sao", "ở đâu", "khi nào", "là gì", "tại sao", "vì sao", "tại vì sao",[m
+[31m-    "ai là", "ai đã", "ai đang", "có đúng không", "có phải là", "có thể", "có hay không", "có không",[m
+[31m-    "nào là", "cái gì", "gì vậy", "thế nào", "cách nào", "phải không", "ra sao", "để làm gì",[m
+[31m-    "mấy giờ", "mấy tuổi", "bao nhiêu", "kéo dài bao lâu",[m
+[31m-    "bằng cách nào", "vì điều gì", "có nghĩa là gì", "được không", "được chứ", "bạn có biết", "là gì", "là ai", "có biết"[m
+[31m-][m
+[31m-# Bộ mở rộng từ khóa theo loại câu hỏi[m
+[31m-BO_TU_MO_RONG = {[m
+[31m-    "ai": ["ai", "người", "tên", "gọi là", "ông", "bà", "cô", "chú"],[m
+[31m-    "trong": ["ngoài", "trên", "dưới", "trong"],[m
+[31m-    "đó là gì": ["đó là", "gọi là", "được xem là", "có nghĩa là", "định nghĩa"],[m
+[31m-    "ở đâu": ["ở", "tại", "sống", "nơi", "địa điểm", "quê", "xuất thân"],[m
+[31m-    "khi nào": ["khi", "năm", "tháng", "ngày", "lúc", "thời gian", "thời điểm"],[m
+[31m-    "vì sao": ["vì", "do", "tại vì", "bởi vì", "nguyên nhân", "lý do"],[m
+[31m-    "như thế nào": ["như thế này", "cách", "ra sao", "mô tả", "kiểu", "dạng", "đặc điểm"],[m
+[31m-    "bao nhiêu": ["số", "tổng", "khoảng" "chừng"],[m
+[31m-    "đang làm gì": ["đang làm", "hành động", "thực hiện", "công việc"],[m
+[31m-    "phu nhân": ["phu nhân", "vợ"],[m
+[31m-    "chồng": ["chồng", "ông xã", "phu quân"],[m
+[31m-    "triều đình": ["triều đình", "vua quan", "hoàng vương", "vua chúa", "hoàng triều"],[m
+[31m-    "ông": ["ông", "cụ", "ngài", "lão"],[m
+[31m-    "bà": ["bà", "cô", "mợ", "thím", "chị", "dì"],[m
+[31m-    "đình": ["đình", "đền", "miếu", "chùa", "nơi thờ"],[m
+[31m-    "quan": ["quan", "quan lại", "quan chức", "chức tước", "viên chức"],[m
+[31m-    "quê": ["quê", "quán", "nơi sinh", "sinh sống", "hiện ở tại"],[m
+[31m-    "chết": ["chết", "mất", "tử vong", "qua đời"][m
+[31m-}[m
+[31m-[m
+[31m-[m
+[31m-def tach_tu_khoa(text):[m
+[31m-    """Tách từ từ văn bản và loại bỏ stopwords."""[m
+[31m-    words = text.split()[m
+[31m-    keywords = [[m
+[31m-        word.lower().rstrip(".,?!")[m
+[31m-        for word in words[m
+[31m-        if word.lower().rstrip(".,?!") not in STOPWORDS[m
+[31m-    ][m
+[31m-    return keywords if keywords else [[m
+[31m-        word.lower().rstrip(".,?!") for word in words[m
+[31m-    ][m
+[31m-[m
+[31m-[m
+[31m-def loc_tu_quan_trong(cau_hoi):[m
+[31m-    cau_hoi = cau_hoi.lower()[m
+[31m-    cau_hoi = re.sub(r"[^\w\s]", "", cau_hoi)  # loại bỏ dấu câu[m
+[31m-[m
+[31m-    # Loại các cụm stop phrases trước[m
+[31m-    for phrase in STOP_PHRASES:[m
+[31m-        cau_hoi = cau_hoi.replace(phrase, "")[m
+[31m-[m
+[31m-    # Tách từ và loại bỏ stopwords đơn lẻ[m
+[31m-    words = cau_hoi.split()[m
+[31m-    return [w for w in words if w not in STOPWORDS][m
+[31m-[m
+[31m-[m
+[31m-def expand_keywords(question):[m
+[31m-    """Mở rộng từ khóa theo loại câu hỏi dựa trên các cụm từ ưu tiên đã định nghĩa."""[m
+[31m-    base_keywords = tach_tu_khoa(question)[m
+[31m-    question_lower = question.lower()[m
+[31m-    priority_keywords = [][m
+[31m-    for nhom, cum_tu in BO_TU_MO_RONG.items():[m
+[31m-        for phrase in cum_tu:[m
+[31m-            if phrase in question_lower:[m
+[31m-                priority_keywords.extend(cum_tu)[m
+[31m-                # break  # Nếu một cụm phù hợp thì thêm toàn bộ nhóm[m
+[31m-[m
+[31m-    # Tách cụm từ thành từ đơn[m
+[31m-    tu_don_tu_cum = [][m
+[31m-    for cum in priority_keywords:[m
+[31m-        tu_don_tu_cum.extend(cum.lower().split())[m
+[31m-[m
+[31m-    # Gộp và loại trùng[m
+[31m-    return list(set([kw.lower() for kw in base_keywords] + tu_don_tu_cum))[m
+[32m+[m[32mprevious_answers = {}[m
+ [m
+ [m
+ def capitalize_first_letter(paragraph):[m
+[36m@@ -97,7 +20,8 @@[m [mdef capitalize_first_letter(paragraph):[m
+     return paragraph[m
+ [m
+ [m
+[31m-def similar(a, b):[m
+[32m+[m[32m@lru_cache(maxsize=10000)[m
+[32m+[m[32mdef cached_similarity(a, b):[m
+     return SequenceMatcher(None, a, b).ratio()[m
+ [m
+ [m
+[36m@@ -113,12 +37,19 @@[m [mdef find_keyword_positions2(text, keywords):[m
+     return sorted(positions)[m
+ [m
+ [m
+[31m-def luu_ngu_canh(question, answer, MAX_QUESTIONS=5):[m
+[32m+[m[32mprevious_answers = {}[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef luu_ngu_canh(question, answer, sources=None, MAX_QUESTIONS=5):[m
+     if len(previous_answers) >= MAX_QUESTIONS:[m
+[31m-        oldest_question = next(iter(previous_answers))  # Lấy câu hỏi cũ nhất[m
+[31m-        del previous_answers[oldest_question]  # Xóa câu hỏi cũ nhất[m
+[31m-    # Lưu câu hỏi và câu trả lời mới vào từ điển[m
+[31m-    previous_answers[question] = answer[m
+[32m+[m[32m        oldest_question = next(iter(previous_answers))[m
+[32m+[m[32m        del previous_answers[oldest_question][m
+[32m+[m
+[32m+[m[32m    previous_answers[question] = {[m
+[32m+[m[32m        "answer": answer,[m
+[32m+[m[32m        "sources": sources or [][m
+[32m+[m[32m    }[m
+[32m+[m
+     return previous_answers[m
+ [m
+ [m
+[36m@@ -129,30 +60,33 @@[m [mdef xoa_ngucanh():[m
+ def xuli_doanvan_ngu_canh(user_input):[m
+     user_keywords = loc_tu_quan_trong(user_input)[m
+     print("từ sau khi lọc bỏ và tách từ: ", user_keywords)[m
+[32m+[m
+     max_similarity = 0[m
+     best_paragraph = None[m
+[32m+[m[32m    best_sources = [][m
+ [m
+[31m-    for previous_question, previous_answer in previous_answers.items():[m
+[31m-        paragraphs = previous_answer.split('\n')[m
+[32m+[m[32m    for previous_question, data in previous_answers.items():[m
+[32m+[m[32m        answer_text = data.get("answer", "")[m
+[32m+[m[32m        sources = data.get("sources", [])[m
+ [m
+[32m+[m[32m        paragraphs = answer_text.split('\n')[m
+         for paragraph in paragraphs:[m
+             keywords = tach_tu_khoa(paragraph)[m
+             common = set(user_keywords) & set(keywords)[m
+ [m
+             if not user_keywords:[m
+[31m-                continue  # tránh chia 0[m
+[32m+[m[32m                continue[m
+ [m
+             similarity = len(common) / len(user_keywords)[m
+[31m-[m
+             if similarity > max_similarity:[m
+                 max_similarity = similarity[m
+                 best_paragraph = paragraph[m
+[32m+[m[32m                best_sources = sources[m
+ [m
+[31m-    if max_similarity >= 0.9:[m
+[31m-        print("đoạn  văn lọc được: ", best_paragraph.strip())[m
+[31m-        return best_paragraph.strip()[m
+[32m+[m[32m    if max_similarity >= 0.85:[m
+[32m+[m[32m        return best_paragraph.strip(), best_sources[m
+     else:[m
+[31m-        return None[m
+[32m+[m[32m        return None, [][m
+ [m
+ [m
+ def xuly_vanban_google(keyword, all_text):[m
+[36m@@ -173,55 +107,43 @@[m [mdef xuly_vanban_google(keyword, all_text):[m
+     return all_text  # Trả về phần văn bản được lấy ra từ vị trí đầu tiên của từ khóa[m
+ [m
+ [m
+[31m-def search_google(keyword, num_of_results=5, max_sources=2, max_words=200):[m
+[31m-[m
+[32m+[m[32mdef search_google(keyword, user_input, num_of_results=5, max_sources=2, max_words=200):[m
+     keyword = " ".join(loc_tu_quan_trong(keyword))[m
+[32m+[m[32m    print(f"[🔍 Truy vấn Google sau lọc]: {keyword}")[m
+ [m
+     try:[m
+         search_results = search(keyword, num_results=num_of_results, lang='vi')[m
+         all_paragraphs = [][m
+         sources_count = 0[m
+[32m+[m[32m        collected_sources = [][m
+ [m
+         for first_link in search_results:[m
+             if sources_count >= max_sources:[m
+                 break[m
+[31m-[m
+             if not first_link:[m
+                 continue[m
+ [m
+             try:[m
+                 response = requests.get(first_link, timeout=10, verify=False)[m
+[31m-                time.sleep(random.uniform(0.3, 0.5))  # Sleep để tránh bị chặn[m
+[31m-[m
+[32m+[m[32m                time.sleep(random.uniform(0.3, 0.5))[m
+                 soup = BeautifulSoup(response.content, 'html.parser')[m
+[31m-[m
+[31m-                # Xoá các thẻ không mong muốn[m
+                 for tag in soup(['script', 'style', 'footer', 'header', 'nav', 'aside', 'address']):[m
+                     tag.decompose()[m
+[31m-[m
+[31m-                # Lấy các đoạn văn <p>, thêm separator để không dính chữ[m
+                 paragraphs = [[m
+                     p.get_text(separator=" ", strip=True)[m
+[31m-                    for p in soup.find_all('p')[m
+[31m-                    if p.get_text(strip=True)[m
+[32m+[m[32m                    for p in soup.find_all('p') if p.get_text(strip=True)[m
+                 ][m
+[31m-[m
+                 all_paragraphs.extend(paragraphs)[m
+[32m+[m[32m                collected_sources.append(first_link)[m
+                 sources_count += 1[m
+[31m-[m
+[31m-            except requests.RequestException as e:[m
+[31m-                # print(f"Không thể truy cập trang {first_link}: {e}")[m
+[32m+[m[32m            except requests.RequestException:[m
+                 pass[m
+ [m
+         if not all_paragraphs:[m
+[31m-            return "Sorry, không tìm thấy kết quả phù hợp", "Sorry, không tìm thấy kết quả phù hợp"[m
+[32m+[m[32m            return "Sorry, không tìm thấy kết quả phù hợp", "Sorry, không tìm thấy kết quả phù hợp", [][m
+ [m
+[31m-        # Kết hợp và làm sạch văn bản[m
+         all_text = '\n'.join(filter(None, all_paragraphs))[m
+[31m-        # Xoá khoảng trắng thừa trước dấu câu[m
+         all_text = re.sub(r'\s+([.,;!?])', r'\1', all_text)[m
+[31m-[m
+[31m-        # Các bước làm sạch đặc biệt (theo yêu cầu trước)[m
+         patterns_to_remove = [[m
+             r'Hãy xác nhận rằng quý vị là chuyên gia chăm sóc sức khỏe',[m
+             r'Liên kết bạn vừa chọn sẽ đưa bạn tới trang web của một bên thứ ba.*?nội dung khác về y tế có liên quan\.',[m
+[36m@@ -230,49 +152,44 @@[m [mdef search_google(keyword, num_of_results=5, max_sources=2, max_words=200):[m
+         for pattern in patterns_to_remove:[m
+             all_text = re.sub(pattern, '', all_text, flags=re.DOTALL)[m
+ [m
+[31m-        # Thêm hàm xử lý văn bản nếu có[m
+         try:[m
+             all_text = xuly_vanban_google(keyword, all_text)[m
+         except:[m
+[31m-            pass  # Nếu không có hàm này thì bỏ qua[m
+[32m+[m[32m            pass[m
+ [m
+[31m-        # Backup version xoá \n thành space[m
+         text = all_text.replace("\n", " ")[m
+ [m
+         if text.strip():[m
+             try:[m
+[31m-                luu_ngu_canh(keyword, text)[m
+[32m+[m[32m                luu_ngu_canh(keyword, text, collected_sources)[m
+             except:[m
+                 pass[m
+[31m-        # Giới hạn số từ[m
+[32m+[m
+         words = all_text.split()[m
+         if len(words) > max_words:[m
+[31m-            doan_dau_text = tra_loi_tho(keyword, text)[m
+[31m-            if doan_dau_text:[m
+[31m-[m
+[31m-                doan_dau = doan_dau_text[m
+[31m-            else:[m
+[31m-                doan_dau = f"Xin lỗi, tôi không tìm thấy thông tin {keyword}"[m
+[31m-                print("đạn văn seachgoogle sl 200: ", doan_dau)[m
+[32m+[m[32m            doan_dau_text = tra_loi_tho(user_input, text, collected_sources)[m
+[32m+[m[32m            doan_dau = doan_dau_text if doan_dau_text else f"Xin lỗi, tôi không tìm thấy thông tin {keyword}"[m
+         else:[m
+             doan_dau = all_text[m
+[32m+[m
+         if all_text.strip():[m
+[31m-            return doan_dau, text[m
+[32m+[m[32m            return doan_dau, text, collected_sources[m
+         else:[m
+[31m-            return "Sorry, không tìm thấy kết quả phù hợp", "Sorry, không tìm thấy kết quả phù hợp"[m
+[32m+[m[32m            return "Sorry, không tìm thấy kết quả phù hợp", "Sorry, không tìm thấy kết quả phù hợp", [][m
+ [m
+     except Exception as e:[m
+[31m-        return f"Sorry, đã xảy ra lỗi: {str(e)}", f"Sorry, đã xảy ra lỗi: {str(e)}"[m
+[32m+[m[32m        return f"Sorry, đã xảy ra lỗi: {str(e)}", f"Sorry, đã xảy ra lỗi: {str(e)}", [][m
+ [m
+ [m
+ def tra_loi_tho(user_input, text):[m
+ [m
+     if len(text) >= 100000:[m
+         best_related_answer = traloi_theo_ngucanh1(user_input, text)[m
+[31m-        print("đạn văn seachgoogle sll: ", best_related_answer)[m
+[32m+[m[32m        # print("đạn văn tra ngữ cảnh sll: ", best_related_answer)[m
+     else:[m
+[31m-        best_related_answer = traloi_theo_ngucanh2_1(user_input, text)[m
+[31m-        print("đạn văn seachgoogle sl 1000: ", best_related_answer)[m
+[32m+[m[32m        best_related_answer = traloi_theo_ngucanh2_1_optimized([m
+[32m+[m[32m            user_input, text)[m
+[32m+[m[32m        # print("đạn văn tra ngũ cảnh sl 1000: ", best_related_answer)[m
+     return best_related_answer[m
+ [m
+ # DÙNG CHO VĂN BẢN LỚN[m
+[36m@@ -363,7 +280,7 @@[m [mdef traloi_theo_ngucanh1(user_input, text, similarity_threshold=0.75):[m
+         for answer in filtered_answers:[m
+             found_group = False[m
+             for group in groups:[m
+[31m-                if similar(answer, group[0]) > similarity_threshold:[m
+[32m+[m[32m                if cached_similarity(answer, group[0]) > similarity_threshold:[m
+                     group.append(answer)[m
+                     found_group = True[m
+                     break[m
+[36m@@ -389,10 +306,9 @@[m [mdef traloi_theo_ngucanh2_1(user_input, text, k=0.75):[m
+     - Trả về đoạn văn ngắn gọn, cô đọng, sẵn sàng làm đầu vào cho LLM.[m
+     """[m
+     keywords = expand_keywords(user_input)[m
+[31m-    print(keywords)[m
+ [m
+     keyword_related_answers = {}[m
+[31m-    y = (len(keywords) // 11) + 1[m
+[32m+[m[32m    y = (len(keywords) // 20) + 1[m
+     z = len(tach_tu_khoa(user_input)) + len(tach_tu_khoa(user_input))//2[m
+     print("Ngưỡng count:", y, "| Số từ lấy để đếm:", z)[m
+ [m
+[36m@@ -433,23 +349,19 @@[m [mdef traloi_theo_ngucanh2_1(user_input, text, k=0.75):[m
+             words_in_related_answer) if word in keywords][m
+         if keyword_indices:[m
+             span = keyword_indices[-1] - keyword_indices[0] + 1[m
+[31m-            density = count / span if span > 0 else 0[m
+[32m+[m[32m            density = len(keyword_indices) / span if span > 0 else 0[m
+         else:[m
+             density = 0[m
+ [m
+         # Lọc theo ngưỡng[m
+         if count > y and density >= 0.1:[m
+             selected_text = related_answer1[m
+[31m-            for kw in keywords:[m
+[31m-                if kw in keyword_related_answers:[m
+[31m-                    keyword_related_answers[kw].append((selected_text, count))[m
+[31m-                else:[m
+[31m-                    keyword_related_answers[kw] = [(selected_text, count)][m
+[32m+[m[32m            print(f"\n✔️ Câu được chọn: {selected_text}", "Ngưỡng count:", y, "| Số từ lấy để đếm:", z, "| chiều dài đoạn chứa từ khóa:",[m
+[32m+[m[32m                  span, "| Số từ khóa ngưỡng:", count, "| Số từ trong khoảng:", len(keyword_indices), "| mật độ từ khóa", density)[m
+[32m+[m[32m            keyword_related_answers.setdefault(selected_text, count)[m
+ [m
+     # Gom tất cả đoạn và đếm max[m
+[31m-    all_related_answers = [][m
+[31m-    for related_list in keyword_related_answers.values():[m
+[31m-        all_related_answers.extend(related_list)[m
+[32m+[m[32m    all_related_answers = list(keyword_related_answers.items())[m
+ [m
+     best_related_answers = [][m
+     if all_related_answers:[m
+[36m@@ -464,7 +376,7 @@[m [mdef traloi_theo_ngucanh2_1(user_input, text, k=0.75):[m
+     for ans in best_related_answers:[m
+         found = False[m
+         for group in groups:[m
+[31m-            if similar(ans, group[0]) > k:[m
+[32m+[m[32m            if cached_similarity(ans, group[0]) > k:[m
+                 group.append(ans)[m
+                 found = True[m
+                 break[m
+[36m@@ -484,108 +396,108 @@[m [mdef traloi_theo_ngucanh2_1(user_input, text, k=0.75):[m
+     if selected_answers:[m
+ [m
+         paragraph = clean_paragraph(selected_answers)  # Không shuffle[m
+[32m+[m[32m        print("sau khi lọc ngữ cảnh 2_1: ", paragraph, len(paragraph))[m
+         if len(paragraph) > 2000:[m
+             paragraph = paragraph[:1000].rsplit(".", 1)[0] + "."[m
+[32m+[m
+         return paragraph[m
+     return None[m
+ [m
+ [m
+[31m-def restructure_response_v2(selected_answers):[m
+[31m-    if not selected_answers:[m
+[31m-        return None[m
+[31m-[m
+[31m-    selected_answers = [s.strip().rstrip('.') for s in selected_answers][m
+[31m-    n = len(selected_answers)[m
+[31m-[m
+[31m-    if n == 1:[m
+[31m-        return f"{selected_answers[0]}."[m
+[31m-[m
+[31m-    elif n == 2:[m
+[31m-        return ([m
+[31m-            f"{selected_answers[0]}. Bên cạnh đó, {selected_answers[1].lower()}."[m
+[31m-        )[m
+[31m-[m
+[31m-    elif n == 3:[m
+[31m-        return ([m
+[31m-            f"{selected_answers[0]}. "[m
+[31m-            f"Không những vậy, {selected_answers[1].lower()}. "[m
+[31m-            f"Cuối cùng, {selected_answers[2].lower()}."[m
+[31m-        )[m
+[32m+[m[32mdef traloi_theo_ngucanh2_1_optimized(user_input, text, k=0.75):[m
+[32m+[m[32m    """[m
+[32m+[m[32m    Kết hợp tốc độ của bản 1 và độ chính xác lọc từ bản 2.[m
+[32m+[m[32m    Trích xuất các câu liên quan đến câu hỏi dựa trên từ khóa mở rộng và ngữ cảnh.[m
+[32m+[m[32m    """[m
+[32m+[m[32m    keywords = expand_keywords(user_input)[m
+[32m+[m[32m    keyword_related_answers = {}[m
+ [m
+[31m-    else:[m
+[31m-        # Với nhiều hơn 3 đoạn, nhóm và chuyển thành đoạn tóm tắt[m
+[31m-        intro = "Dưới đây là những điểm nổi bật:"[m
+[31m-        bullets = "\n".join([f"- {s}." for s in selected_answers])[m
+[31m-        return f"{intro}\n{bullets}"[m
+[32m+[m[32m    # Giữ nguyên cách tính như bản 2[m
+[32m+[m[32m    base_keywords = tach_tu_khoa(user_input)[m
+[32m+[m[32m    z = 5 if len(base_keywords) <= 3 else ([m
+[32m+[m[32m        len(base_keywords) + len(base_keywords) // 2)[m
+[32m+[m[32m    y = 2 if ((len(keywords) // 11) + 1) < 2 else ((len(keywords) // 11) + 1)[m
+ [m
+[32m+[m[32m    print("Ngưỡng count:", y, "| Số từ lấy để đếm:", z)[m
+ [m
+[31m-def restructure_response_v2_1(selected_answers, keywords=None):[m
+[31m-    if not selected_answers:[m
+[31m-        return None[m
+[32m+[m[32m    keyword_positions = find_keyword_positions2(text, keywords)[m
+ [m
+[31m-    selected_answers = [s.strip().rstrip('.') for s in selected_answers][m
+[31m-    n = len(selected_answers)[m
+[32m+[m[32m    for start_index in keyword_positions:[m
+[32m+[m[32m        sentence_start_index = max([m
+[32m+[m[32m            text.rfind('.', 0, start_index),[m
+[32m+[m[32m            text.rfind('!', 0, start_index),[m
+[32m+[m[32m            text.rfind('?', 0, start_index)[m
+[32m+[m[32m        ) + 1[m
+ [m
+[31m-    TRANSITIONS = {[m
+[31m-        "mở đầu": ["Trước hết", "Đầu tiên", "Thoạt tiên"],[m
+[31m-        "bổ sung": ["Ngoài ra", "Bên cạnh đó", "Thêm vào đó"],[m
+[31m-        "nhấn mạnh": ["Đáng chú ý là", "Đặc biệt là"],[m
+[31m-        "kết luận": ["Cuối cùng", "Tổng kết lại", "Sau cùng"][m
+[31m-    }[m
+[32m+[m[32m        # Tìm cuối câu[m
+[32m+[m[32m        temp_index = start_index[m
+[32m+[m[32m        while True:[m
+[32m+[m[32m            end_index = text.find(".", temp_index)[m
+[32m+[m[32m            if end_index == -1:[m
+[32m+[m[32m                break[m
+[32m+[m[32m            if end_index + 1 < len(text) and text[end_index + 1] in [' ', '\n']:[m
+[32m+[m[32m                break[m
+[32m+[m[32m            temp_index = end_index + 1[m
+ [m
+[31m-    def pick(trans_type):[m
+[31m-        return random.choice(TRANSITIONS.get(trans_type, [""]))[m
+[32m+[m[32m        related_answer = text[start_index:end_index +[m
+[32m+[m[32m                              1] if end_index != -1 else text[start_index:][m
+[32m+[m[32m        related_answer1 = text[sentence_start_index:end_index +[m
+[32m+[m[32m                               1] if end_index != -1 else text[sentence_start_index:][m
+ [m
+[31m-    def summarize_keywords(keywords):[m
+[31m-        try:[m
+[31m-            from sklearn.feature_extraction.text import TfidfVectorizer[m
+[31m-            import numpy as np[m
+[31m-[m
+[31m-            vectorizer = TfidfVectorizer(stop_words='english', max_features=10)[m
+[31m-            X = vectorizer.fit_transform(keywords)[m
+[31m-            terms = vectorizer.get_feature_names_out()[m
+[31m-            scores = X.toarray().sum(axis=0)[m
+[31m-            sorted_indices = np.argsort(scores)[::-1][m
+[31m-            top_terms = [terms[i] for i in sorted_indices[:3]][m
+[31m-            return ', '.join(top_terms)[m
+[31m-        except:[m
+[31m-            return ', '.join(kw.split()[0] for kw in keywords[:2])[m
+[32m+[m[32m        # Tính count và density[m
+[32m+[m[32m        words_in_related_answer = related_answer.lower().replace([m
+[32m+[m[32m            ",", " ").rstrip(',.?!').split()[m
+[32m+[m[32m        count = sum([m
+[32m+[m[32m            1 for word in words_in_related_answer[:z] if word in keywords)[m
+[32m+[m[32m        print(related_answer, count)[m
+[32m+[m[32m        keyword_indices = [i for i, word in enumerate([m
+[32m+[m[32m            words_in_related_answer) if word in keywords][m
+[32m+[m[32m        if keyword_indices:[m
+[32m+[m[32m            span = keyword_indices[-1] - keyword_indices[0] + 1[m
+[32m+[m[32m            density = len(keyword_indices) / span if span > 0 else 0[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            density = 0[m
+ [m
+[31m-    def generate_intro(keywords):[m
+[31m-        if not keywords:[m
+[31m-            return ""[m
+[31m-        topic = summarize_keywords(keywords)[m
+[31m-        return f"Liên quan đến {topic}, dưới đây là những điểm nổi bật:"[m
+[32m+[m[32m        # Lọc theo ngưỡng[m
+[32m+[m[32m        if count >= y and density >= 0.1:[m
+[32m+[m[32m            selected_text = related_answer1.strip()[m
+[32m+[m[32m            # Chỉ lưu 1 lần mỗi đoạn[m
+[32m+[m[32m            keyword_related_answers[selected_text] = count[m
+ [m
+[31m-    avg_len = sum(len(s.split()) for s in selected_answers) / n[m
+[32m+[m[32m    # Lấy những đoạn có count gần max[m
+[32m+[m[32m    all_related_answers = list(keyword_related_answers.items())[m
+[32m+[m[32m    best_related_answers = [][m
+[32m+[m[32m    if all_related_answers:[m
+[32m+[m[32m        max_matched = max(c for _, c in all_related_answers)[m
+[32m+[m[32m        best_related_answers = [[m
+[32m+[m[32m            ans for ans, c in all_related_answers if c >= max_matched - 1[m
+[32m+[m[32m        ][m
+ [m
+[31m-    if n == 1:[m
+[31m-        return f"{generate_intro(keywords)} {selected_answers[0]}."[m
+[32m+[m[32m    # Gom nhóm đoạn tương tự[m
+[32m+[m[32m    groups = [][m
+[32m+[m[32m    for ans in best_related_answers:[m
+[32m+[m[32m        found = False[m
+[32m+[m[32m        for group in groups:[m
+[32m+[m[32m            if cached_similarity(ans, group[0]) > k:[m
+[32m+[m[32m                group.append(ans)[m
+[32m+[m[32m                found = True[m
+[32m+[m[32m                break[m
+[32m+[m[32m        if not found:[m
+[32m+[m[32m            groups.append([ans])[m
+ [m
+[31m-    elif n == 2:[m
+[31m-        return ([m
+[31m-            f"{generate_intro(keywords)} {selected_answers[0]}. {pick('bổ sung')}, {selected_answers[1].lower()}."[m
+[31m-        )[m
+[32m+[m[32m    # Lấy mỗi nhóm một đoạn[m
+[32m+[m[32m    selected_answers = [capitalize_first_letter([m
+[32m+[m[32m        random.choice(g)) for g in groups][m
+ [m
+[31m-    elif n == 3:[m
+[31m-        return ([m
+[31m-            f"{generate_intro(keywords)} {pick('mở đầu')}, {selected_answers[0].lower()}. "[m
+[31m-            f"{pick('bổ sung')}, {selected_answers[1].lower()}. "[m
+[31m-            f"{pick('kết luận')}, {selected_answers[2].lower()}."[m
+[31m-        )[m
+[32m+[m[32m    def clean_paragraph(sentences):[m
+[32m+[m[32m        text = ' '.join(sentences)[m
+[32m+[m[32m        return re.sub(r'\s+', ' ', text).strip()[m
+ [m
+[31m-    else:[m
+[31m-        if avg_len <= 10:[m
+[31m-            phrases = [][m
+[31m-            for i, s in enumerate(selected_answers):[m
+[31m-                if i == 0:[m
+[31m-                    phrases.append(f"{pick('mở đầu')}, {s.lower()}")[m
+[31m-                elif i == n - 1:[m
+[31m-                    phrases.append(f"{pick('kết luận')}, {s.lower()}")[m
+[31m-                else:[m
+[31m-                    phrases.append(f"{pick('bổ sung')}, {s.lower()}")[m
+[31m-            return f"{generate_intro(keywords)} " + ". ".join(phrases) + "."[m
+[32m+[m[32m    if selected_answers:[m
+[32m+[m[32m        paragraph = clean_paragraph(selected_answers)[m
+[32m+[m[32m        if len(paragraph) > 2000:[m
+[32m+[m[32m            paragraph = paragraph[:1000].rsplit(".", 1)[0] + "."[m
+[32m+[m[32m        print("✔️ Đoạn trích ngữ cảnh:", paragraph, len(paragraph))[m
+[32m+[m[32m        return paragraph[m
+ [m
+[31m-        else:[m
+[31m-            bullets = "\n".join([f"- {s}." for s in selected_answers])[m
+[31m-            return f"{generate_intro(keywords)}\n{bullets}"[m
+[32m+[m[32m    return None[m
+[1mdiff --git a/ngu_canh_truy_van.py b/ngu_canh_truy_van.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..0ecab44[m
+[1m--- /dev/null[m
+[1m+++ b/ngu_canh_truy_van.py[m
+[36m@@ -0,0 +1,24 @@[m
+[32m+[m[32m# ngu_canh_truy_van.py[m
+[32m+[m
+[32m+[m[32mdef co_can_bo_sung_chu_de(user_input: str) -> bool:[m
+[32m+[m[32m    """[m
+[32m+[m[32m    Kiểm tra xem user_input có chứa đại từ hoặc từ chỉ mơ hồ,[m
+[32m+[m[32m    nếu có thì cần bổ sung chủ đề (danh từ riêng) vào câu hỏi.[m
+[32m+[m[32m    """[m
+[32m+[m[32m    tu_dai_dien = [[m
+[32m+[m[32m        "ông ấy", "bà ấy", "họ", "nó", "cô ấy", "cậu ấy", "người ấy", "anh ta", "chị ta", "ông", "bà",[m
+[32m+[m[32m        "vị đó", "nhân vật đó", "vật đó", "vật này", "chuyện đó", "việc ấy", "chủ đề đó",[m
+[32m+[m[32m        "nó là gì", "việc đó", "hành động đó", "điều đó", "trường hợp đó"[m
+[32m+[m[32m    ][m
+[32m+[m[32m    user_input = user_input.lower()[m
+[32m+[m[32m    return any(cum in user_input for cum in tu_dai_dien)[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef tao_truy_van_bo_sung(user_input: str, danh_tu_rieng_truoc_do: str = None) -> str:[m
+[32m+[m[32m    """[m
+[32m+[m[32m    Nếu câu hỏi cần thêm chủ đề thì nối chủ đề cũ vào đầu câu hỏi.[m
+[32m+[m[32m    Nếu không, trả lại nguyên văn user_input.[m
+[32m+[m[32m    """[m
+[32m+[m[32m    if danh_tu_rieng_truoc_do and co_can_bo_sung_chu_de(user_input):[m
+[32m+[m[32m        return f"{danh_tu_rieng_truoc_do.strip()} {user_input.strip()}"[m
+[32m+[m[32m    return user_input.strip()[m

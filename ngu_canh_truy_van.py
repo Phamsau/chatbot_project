@@ -6,7 +6,7 @@ def co_can_bo_sung_chu_de(user_input: str) -> bool:
     nếu có thì cần bổ sung chủ đề (danh từ riêng) vào câu hỏi.
     """
     tu_dai_dien = [
-        "ông ấy", "bà ấy", "họ", "nó", "cô ấy", "cậu ấy", "người ấy", "anh ta", "chị ta",
+        "ông ấy", "bà ấy", "họ", "nó", "cô ấy", "cậu ấy", "người ấy", "anh ta", "chị ta", "ông", "bà",
         "vị đó", "nhân vật đó", "vật đó", "vật này", "chuyện đó", "việc ấy", "chủ đề đó",
         "nó là gì", "việc đó", "hành động đó", "điều đó", "trường hợp đó"
     ]

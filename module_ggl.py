@@ -83,8 +83,6 @@ def xuli_doanvan_ngu_canh(user_input):
                 best_paragraph = paragraph
                 best_sources = sources
 
-    if max_similarity >= 0.85:
-        return best_paragraph.strip(), best_sources
     else:
         return None, []
 

@@ -1,7 +1,7 @@
 import re
 # Stopwords để loại bỏ từ khóa nhiễu
 STOPWORDS = {
-    "gì", "nào", "ai", "sao", "à", "và", "các", "của", "là",
+    "gì", "nào", "ai", "sao", "à", "và", "các", "của",
     "ấy", "thì", "ở", "đâu", "ra", "nó", "nhưng", "những", "hả", "sẽ", "mấy"
 }
 STOP_PHRASES = [
@@ -59,13 +59,19 @@ def tach_tu_khoa(text: str):
 
 
 def loc_tu_quan_trong(cau_hoi: str):
-    """Loại cụm từ dư thừa và chỉ giữ từ trọng tâm."""
+    """Loại bỏ cụm từ dư thừa và chỉ giữ lại từ quan trọng."""
     cau_hoi = cau_hoi.lower()
+
+    # Xử lý từng cụm stop-phrase chính xác theo từ nguyên
+    for phrase in STOP_PHRASES:
+        # Thêm khoảng trắng hai bên để không cắt dính vào từ
+        pattern = r'\b' + re.escape(phrase) + r'\b'
+        cau_hoi = re.sub(pattern, ' ', cau_hoi)
+
+    # Xoá dấu câu sau khi xử lý stop phrases để không làm sai lệch khớp
     cau_hoi = re.sub(r"[^\w\s]", "", cau_hoi)
 
-    for phrase in STOP_PHRASES:
-        cau_hoi = cau_hoi.replace(phrase, "")
-
+    # Loại stopwords đơn
     words = cau_hoi.split()
     return [w for w in words if w not in STOPWORDS]
 
@@ -95,3 +101,18 @@ def expand_keywords(user_input: str):
         tu_don_tu_cum.extend(cum.lower().split())
 
     return list(set(base_keywords + tu_don_tu_cum))
+
+
+def clean_text(text):
+    # Tách token: từ, khoảng trắng, dấu câu
+    tokens = re.findall(r'\w+|\s+|[^\w\s]', text, re.UNICODE)
+
+    result = []
+    for token in tokens:
+        # Nếu là từ chữ (không phải dấu câu hay khoảng trắng)
+        if re.fullmatch(r'\w+', token, re.UNICODE):
+            if token.lower() in STOPWORDS:
+                continue  # bỏ từ dừng nguyên vẹn
+        result.append(token)
+
+    return ''.join(result)

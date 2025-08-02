@@ -41,7 +41,7 @@ def lam_dep_cau_tra_loi_groq(cau_hoi, noi_dung_tham_khao, ngu_canh=None):
         "content": (
             "Viết lại câu trả lời mạch lạc, rõ ràng, thân thiện, chính xác và phải trích nguồn nếu có"
             "yêu cầu: Tên nhân vật phải đủ thông tin mới nêu, không gán ghép, không được đoán hay bịa đặt tên nhân vật khi thông tin không rõ ràng. "
-            "Cuối cùng, ghi rõ dòng sau:\n"
+            "Cuối cùng, nhất định phải ghi rõ dòng sau:\n"
             "[DANH_TU_RIENG: tên đầy đủ hoặc chủ đề chính mà người dùng đang đề cập nếu có]"
         )
     })
@@ -55,14 +55,19 @@ def lam_dep_cau_tra_loi_groq(cau_hoi, noi_dung_tham_khao, ngu_canh=None):
         )
         content = ket_qua.choices[0].message.content.strip()
 
-        match = re.search(r"\[DANH_TU_RIENG:(.*?)\]\s*$", content, re.DOTALL)
         danh_tu_rieng = []
-        if match:
-            danh_tu_rieng = list(
-                {ten.strip() for ten in match.group(1).split(",") if ten.strip()}
-            )
-            content = content[:match.start()].strip()
+        match = re.search(
+            r"(?:\[)?DANH_TU_RIENG:(.*?)(?:\])?\s*$", content, re.DOTALL)
 
+        if match:
+            # Tách danh từ riêng theo dấu phẩy, loại bỏ khoảng trắng
+            danh_tu_rieng = list({
+                ten.strip()
+                for ten in match.group(1).split(",")
+                if ten.strip()
+            })
+            # Loại bỏ phần DANH_TU_RIENG khỏi nội dung
+            content = content[:match.start()].strip()
         return content, danh_tu_rieng
 
     except Exception as e:

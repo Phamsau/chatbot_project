@@ -57,7 +57,7 @@ def chatbot_response(user_input):
             user_response = tra_loi_tho(user_input, text)
             chatgpt_output, updated_history, danh_tu_rieng_moi = capnhat(
                 user_input, user_response, user_context["history"], nguon)
-            user_context["history"] = updated_history[-20:]
+            user_context["history"] = updated_history[-10:]
             if danh_tu_rieng_moi:
                 user_context["danh_tu_rieng_truoc_do"] = danh_tu_rieng_moi[-1]
             return chatgpt_output
@@ -71,7 +71,7 @@ def chatbot_response(user_input):
             luu_ngu_canh(user_input, output)
             chatgpt_output, updated_history, danh_tu_rieng_moi = capnhat(
                 user_input, output, user_context["history"])
-            user_context["history"] = updated_history[-20:]
+            user_context["history"] = updated_history[-10:]
             if danh_tu_rieng_moi:
                 user_context["danh_tu_rieng_truoc_do"] = danh_tu_rieng_moi[-1]
             return chatgpt_output
@@ -94,11 +94,11 @@ def chatbot_response(user_input):
 
         chatgpt_output, updated_history, danh_tu_rieng_moi = capnhat(
             user_input, user_response, user_context["history"], nguon)
-        user_context["history"] = updated_history[-20:]
+        user_context["history"] = updated_history[-10:]
         if danh_tu_rieng_moi:
             user_context["danh_tu_rieng_truoc_do"] = danh_tu_rieng_moi[-1]
         # Ghi dữ liệu mới vào file
-        # ghi_dulieu_txt(user_input, chatgpt_output)
+        # ghi_dulieu_txt(truy_van, chatgpt_output)
 
         return chatgpt_output
 
@@ -170,7 +170,7 @@ def main():
                 user_input = user_input.lower().strip()
                 text, nguon = xuli_doanvan_ngu_canh(user_input)
                 best_related_answer = None
-                print(nguon)
+                # print("xuli_doanvan_ngu_canh: ", text)
 
                 if text:
                     best_related_answer = tra_loi_tho(
@@ -181,7 +181,7 @@ def main():
                     # "kết quả trả lời sau khi tra ngữ cảnh qua hàm tra_loi_tho file main(): ", best_related_answer)
                     chatgpt_output, updated_history, danh_tu_rieng_moi = capnhat(
                         user_input, best_related_answer, history, nguon)
-                    history = updated_history[-20:]
+                    history = updated_history[-10:]
                     danh_tu_rieng_truoc_do = danh_tu_rieng_moi[-1] if danh_tu_rieng_moi else None
                 else:
                     ct1 = sau(user_input)
@@ -191,7 +191,7 @@ def main():
                     if ct1 and ct2 and ct1 in tu_dien and ct1 in ct2:
                         chatgpt_output, updated_history, danh_tu_rieng_moi = capnhat(
                             user_input, tu_dien[ct1], history)
-                        history = updated_history[-20:]
+                        history = updated_history[-10:]
                         danh_tu_rieng_truoc_do = danh_tu_rieng_moi[-1] if danh_tu_rieng_moi else None
                         luu_ngu_canh(user_input, chatgpt_output)
 
@@ -206,6 +206,7 @@ def main():
                     else:
                         truy_van = tao_truy_van_bo_sung(
                             user_input, danh_tu_rieng_truoc_do)
+                        print("truy vấn: ", truy_van)
                         user_response, tiep, nguon = search_google(
                             truy_van, user_input)
 
@@ -213,14 +214,15 @@ def main():
                         current_position = len(user_response.split())
                         chatgpt_output, updated_history, danh_tu_rieng_moi = capnhat(
                             user_input, user_response, history, nguon)
-                        history = updated_history[-20:]
+                        history = updated_history[-10:]
                         danh_tu_rieng_truoc_do = danh_tu_rieng_moi[-1] if danh_tu_rieng_moi else None
 
                         # 🔁 Lưu dữ liệu vào file .txt nếu là từ Google
-                        # ghi_dulieu_txt(user_input, chatgpt_output)
+                        # ghi_dulieu_txt(truy_van, user_response)
             print(
                 "kết quả test thử user_input với hàm lay_tham_chieu_theo_dai_tu: ", danh_tu_rieng_truoc_do)
             hien_thi_vien_va_con_tro(chatgpt_output)
+            print(nguon)
 
             if not cv:
                 speak_text1(chatgpt_output)

@@ -9,8 +9,8 @@ from bs4 import BeautifulSoup
 import re
 import time
 from functools import lru_cache
-from keyword_expander import tach_tu_khoa, loc_tu_quan_trong, expand_keywords
-
+from keyword_expander import tach_tu_khoa, loc_tu_quan_trong, expand_keywords, clean_text
+import itertools
 previous_answers = {}
 
 
@@ -82,7 +82,8 @@ def xuli_doanvan_ngu_canh(user_input):
                 max_similarity = similarity
                 best_paragraph = paragraph
                 best_sources = sources
-
+    if max_similarity >= 0.55:
+        return best_paragraph.strip(), best_sources
     else:
         return None, []
 
@@ -102,46 +103,75 @@ def xuly_vanban_google(keyword, all_text):
     # Bắt đầu lấy đoạn văn bản từ vị trí xuất hiện của từ trong từ khóa
     if start_index != len(all_text):
         all_text = all_text[start_index:]
-    return all_text  # Trả về phần văn bản được lấy ra từ vị trí đầu tiên của từ khóa
+    # Trả về phần văn bản được lấy ra từ vị trí đầu tiên của từ khóa
+    return all_text
+
+
+def is_valid_paragraph(text):
+    if not text:
+        return False
+    if len(text) < 10:
+        return False
+    if re.match(r"^\d+[\.\)]\s", text):  # Ví dụ: "1. " hoặc "2) "
+        return True
+    if '.' in text or '!' in text or '?' in text:
+        return True
+    return False
 
 
 def search_google(keyword, user_input, num_of_results=5, max_sources=2, max_words=200):
+
+    # Lọc ra từ khóa quan trọng
     keyword = " ".join(loc_tu_quan_trong(keyword))
     print(f"[🔍 Truy vấn Google sau lọc]: {keyword}")
 
     try:
         search_results = search(keyword, num_results=num_of_results, lang='vi')
         all_paragraphs = []
+        used_urls = []
         sources_count = 0
-        collected_sources = []
 
         for first_link in search_results:
             if sources_count >= max_sources:
                 break
+
             if not first_link:
                 continue
 
             try:
                 response = requests.get(first_link, timeout=10, verify=False)
-                time.sleep(random.uniform(0.3, 0.5))
+                time.sleep(random.uniform(0.3, 0.5))  # Sleep để tránh bị chặn
+
                 soup = BeautifulSoup(response.content, 'html.parser')
+
+                # Xoá các thẻ không mong muốn
                 for tag in soup(['script', 'style', 'footer', 'header', 'nav', 'aside', 'address']):
                     tag.decompose()
+
+                # Lấy các đoạn văn <p>, thêm separator để không dính chữ
                 paragraphs = [
                     p.get_text(separator=" ", strip=True)
-                    for p in soup.find_all('p') if p.get_text(strip=True)
+                    for p in soup.find_all(['p', 'li', 'td', 'div'])
+                    if is_valid_paragraph(p.get_text(strip=True))
                 ]
+
                 all_paragraphs.extend(paragraphs)
-                collected_sources.append(first_link)
+                used_urls.append(first_link)
                 sources_count += 1
-            except requests.RequestException:
+
+            except requests.RequestException as e:
+                # print(f"Không thể truy cập trang {first_link}: {e}")
                 pass
 
         if not all_paragraphs:
             return "Sorry, không tìm thấy kết quả phù hợp", "Sorry, không tìm thấy kết quả phù hợp", []
 
+        # Kết hợp và làm sạch văn bản
         all_text = '\n'.join(filter(None, all_paragraphs))
+        # Xoá khoảng trắng thừa trước dấu câu
         all_text = re.sub(r'\s+([.,;!?])', r'\1', all_text)
+
+        # Các bước làm sạch đặc biệt (theo yêu cầu trước)
         patterns_to_remove = [
             r'Hãy xác nhận rằng quý vị là chuyên gia chăm sóc sức khỏe',
             r'Liên kết bạn vừa chọn sẽ đưa bạn tới trang web của một bên thứ ba.*?nội dung khác về y tế có liên quan\.',
@@ -149,29 +179,34 @@ def search_google(keyword, user_input, num_of_results=5, max_sources=2, max_word
         ]
         for pattern in patterns_to_remove:
             all_text = re.sub(pattern, '', all_text, flags=re.DOTALL)
-
+        # print("đoạn văn sau khi xử lý và lưu: ", all_text, len(all_text))
+        # Thêm hàm xử lý văn bản nếu có
         try:
             all_text = xuly_vanban_google(keyword, all_text)
-        except:
-            pass
 
+        except:
+            pass  # Nếu không có hàm này thì bỏ qua
+
+        # Backup version xoá \n thành space
         text = all_text.replace("\n", " ")
 
         if text.strip():
             try:
-                luu_ngu_canh(keyword, text, collected_sources)
+                luu_ngu_canh(keyword, text)
             except:
                 pass
-
+        # Giới hạn số từ
         words = all_text.split()
         if len(words) > max_words:
-            doan_dau_text = tra_loi_tho(user_input, text, collected_sources)
-            doan_dau = doan_dau_text if doan_dau_text else f"Xin lỗi, tôi không tìm thấy thông tin {keyword}"
-        else:
-            doan_dau = all_text
-
+            extended_words = words[:max_words]
+            # Tiếp tục thêm từ cho đến khi gặp dấu chấm
+            for word in words[max_words:]:
+                extended_words.append(word)
+                if word.endswith('.'):
+                    break
+            doan_dau = ' '.join(extended_words)
         if all_text.strip():
-            return doan_dau, text, collected_sources
+            return doan_dau, text, used_urls
         else:
             return "Sorry, không tìm thấy kết quả phù hợp", "Sorry, không tìm thấy kết quả phù hợp", []
 
@@ -182,10 +217,11 @@ def search_google(keyword, user_input, num_of_results=5, max_sources=2, max_word
 def tra_loi_tho(user_input, text):
 
     if len(text) >= 100000:
-        best_related_answer = traloi_theo_ngucanh1(user_input, text)
+        best_related_answer = traloi_theo_ngucanh2_1(
+            user_input, text)
         # print("đạn văn tra ngữ cảnh sll: ", best_related_answer)
     else:
-        best_related_answer = traloi_theo_ngucanh2_1_optimized(
+        best_related_answer = traloi_theo_ngucanh2_1(
             user_input, text)
         # print("đạn văn tra ngũ cảnh sl 1000: ", best_related_answer)
     return best_related_answer
@@ -304,12 +340,13 @@ def traloi_theo_ngucanh2_1(user_input, text, k=0.75):
     - Trả về đoạn văn ngắn gọn, cô đọng, sẵn sàng làm đầu vào cho LLM.
     """
     keywords = expand_keywords(user_input)
+    print("expand_keywords: ", keywords)
 
     keyword_related_answers = {}
-    y = (len(keywords) // 20) + 1
-    z = len(tach_tu_khoa(user_input)) + len(tach_tu_khoa(user_input))//2
+    z = 5 if len(keywords) <= 3 else (
+        len(keywords) + len(keywords) // 2)
+    y = 2 if ((len(keywords) // 11) + 1) < 2 else ((len(keywords) // 11) + 1)
     print("Ngưỡng count:", y, "| Số từ lấy để đếm:", z)
-
     keyword_positions = find_keyword_positions2(text, keywords)
 
     for start_index in keyword_positions:
@@ -354,19 +391,21 @@ def traloi_theo_ngucanh2_1(user_input, text, k=0.75):
         # Lọc theo ngưỡng
         if count > y and density >= 0.1:
             selected_text = related_answer1
-            print(f"\n✔️ Câu được chọn: {selected_text}", "Ngưỡng count:", y, "| Số từ lấy để đếm:", z, "| chiều dài đoạn chứa từ khóa:",
-                  span, "| Số từ khóa ngưỡng:", count, "| Số từ trong khoảng:", len(keyword_indices), "| mật độ từ khóa", density)
+            # print(f"\n✔️ Câu được chọn: {selected_text}", "Ngưỡng count:", y, "| Số từ lấy để đếm:", z, "| chiều dài đoạn chứa từ khóa:",
+            #       span, "| Số từ khóa ngưỡng:", count, "| Số từ trong khoảng:", len(keyword_indices), "| mật độ từ khóa", density)
             keyword_related_answers.setdefault(selected_text, count)
 
-    # Gom tất cả đoạn và đếm max
-    all_related_answers = list(keyword_related_answers.items())
+    # Sắp xếp các đoạn liên quan theo độ trùng khớp giảm dần
+    all_related_answers = sorted(
+        keyword_related_answers.items(), key=lambda x: x[1], reverse=True)
 
+    # Lấy nhóm câu có độ trùng khớp cao nhất (và gần nhất)
     best_related_answers = []
     if all_related_answers:
-        max_matched = max(c for _, c in all_related_answers)
+        max_matched = all_related_answers[0][1]
         best_related_answers = [
             ans for ans, c in all_related_answers
-            if c >= max_matched - 1  # Lấy cả nhóm sát bên dưới
+            if c >= max_matched - 1
         ]
 
     # Lọc trùng theo độ tương đồng
@@ -394,10 +433,10 @@ def traloi_theo_ngucanh2_1(user_input, text, k=0.75):
     if selected_answers:
 
         paragraph = clean_paragraph(selected_answers)  # Không shuffle
-        print("sau khi lọc ngữ cảnh 2_1: ", paragraph, len(paragraph))
-        if len(paragraph) > 2000:
-            paragraph = paragraph[:1000].rsplit(".", 1)[0] + "."
 
+        if len(paragraph) > 1200:
+            paragraph = paragraph[:1000].rsplit(".", 1)[0] + "."
+        print("sau khi lọc ngữ cảnh 2_1: ", paragraph, len(paragraph))
         return paragraph
     return None
 
@@ -411,9 +450,8 @@ def traloi_theo_ngucanh2_1_optimized(user_input, text, k=0.75):
     keyword_related_answers = {}
 
     # Giữ nguyên cách tính như bản 2
-    base_keywords = tach_tu_khoa(user_input)
-    z = 5 if len(base_keywords) <= 3 else (
-        len(base_keywords) + len(base_keywords) // 2)
+    z = 5 if len(keywords) <= 3 else (
+        len(keywords) + len(keywords) // 2)
     y = 2 if ((len(keywords) // 11) + 1) < 2 else ((len(keywords) // 11) + 1)
 
     print("Ngưỡng count:", y, "| Số từ lấy để đếm:", z)
@@ -447,7 +485,7 @@ def traloi_theo_ngucanh2_1_optimized(user_input, text, k=0.75):
             ",", " ").rstrip(',.?!').split()
         count = sum(
             1 for word in words_in_related_answer[:z] if word in keywords)
-        print(related_answer, count)
+        # print(related_answer, count)
         keyword_indices = [i for i, word in enumerate(
             words_in_related_answer) if word in keywords]
         if keyword_indices:
@@ -461,7 +499,7 @@ def traloi_theo_ngucanh2_1_optimized(user_input, text, k=0.75):
             selected_text = related_answer1.strip()
             # Chỉ lưu 1 lần mỗi đoạn
             keyword_related_answers[selected_text] = count
-
+        # print(keyword_related_answers, count)
     # Lấy những đoạn có count gần max
     all_related_answers = list(keyword_related_answers.items())
     best_related_answers = []
@@ -495,7 +533,66 @@ def traloi_theo_ngucanh2_1_optimized(user_input, text, k=0.75):
         paragraph = clean_paragraph(selected_answers)
         if len(paragraph) > 2000:
             paragraph = paragraph[:1000].rsplit(".", 1)[0] + "."
-        print("✔️ Đoạn trích ngữ cảnh:", paragraph, len(paragraph))
+        # print("✔️ Đoạn trích ngữ cảnh:", paragraph, len(paragraph))
         return paragraph
 
     return None
+
+
+def traloi_theo_ngucanh2_1_thu(user_input, text, k=0.75):
+    keywords = set(expand_keywords(user_input))
+    base_keywords = set(tach_tu_khoa(user_input))
+
+    z = 5 if len(base_keywords) <= 3 else len(
+        base_keywords) + len(base_keywords) // 2
+    y = max((len(keywords) // 11) + 1, 2)
+
+    print("Ngưỡng count:", y, "| Số từ lấy để đếm:", z)
+
+    # Tìm tất cả câu trước
+    sentences = re.split(r'(?<=[.?!])\s+', text)
+    keyword_related_answers = {}
+
+    for sent in sentences:
+        lowered = sent.lower()
+        words = re.findall(r'\w+', lowered)
+        count = sum(1 for word in words[:z] if word in keywords)
+
+        # Tính mật độ tập trung
+        keyword_indices = [i for i, word in enumerate(
+            words) if word in keywords]
+        if keyword_indices:
+            span = keyword_indices[-1] - keyword_indices[0] + 1
+            density = len(keyword_indices) / span if span > 0 else 0
+        else:
+            density = 0
+
+        if count >= y and density >= 0.1:
+            clean_sent = sent.strip()
+            keyword_related_answers[clean_sent] = count
+            # print("✔️", clean_sent[:60], "...", "| Count:", count)
+
+    if not keyword_related_answers:
+        return None
+
+    # Lấy top đoạn gần max count
+    all_related = list(keyword_related_answers.items())
+    max_count = max(c for _, c in all_related)
+    best_related = [ans for ans, c in all_related if c >= max_count - 1]
+
+    # Gom nhóm bằng hash trước để tránh trùng
+    seen = set()
+    selected = []
+    for s in best_related:
+        h = hash(s.lower())
+        if h not in seen:
+            seen.add(h)
+            selected.append(s)
+
+    # Gộp đoạn kết quả
+    paragraph = ' '.join(capitalize_first_letter(s) for s in selected)
+    if len(paragraph) > 2000:
+        paragraph = paragraph[:1000].rsplit(".", 1)[0] + "."
+    # print("✔️ Đoạn trích ngữ cảnh (tối ưu):",
+    #       paragraph)
+    return paragraph

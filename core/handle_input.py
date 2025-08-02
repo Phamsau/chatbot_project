@@ -46,7 +46,7 @@ def bay(user_input):
             normalized_question = question.lower().strip()
             similarity = difflib.SequenceMatcher(
                 None, normalized_question, user_input).ratio()
-            if similarity > 0.9:
+            if similarity > 0.90:
                 matched_questions.append((question, similarity))
     if matched_questions:
         max_score = max(matched_questions, key=lambda x: x[1])[1]

@@ -47,7 +47,6 @@
     }
     #send-btn:hover { background: #45a049; }
 
-    /* --- Responsive styling --- */
     @media (max-width: 600px) {
       .container { height: 100vh; }
       header { font-size: 1rem; padding: 12px; }
@@ -96,8 +95,9 @@
         });
         const data = await res.json();
         botDiv.innerText = data.reply;
-      } catch {
+      } catch (err) {
         botDiv.innerText = "Lỗi khi gửi yêu cầu.";
+        console.error("Lỗi gửi:", err);
       }
     }
 
@@ -105,6 +105,19 @@
     userInput.addEventListener("keypress", e => {
       if (e.key === "Enter") sendMessage();
     });
+
+    // Gửi lời chào khi trang load
+    window.onload = () => {
+      fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "" })
+      })
+      .then(res => res.json())
+      .then(data => {
+        addMessage(data.reply, "bot-msg");
+      });
+    };
   </script>
 </body>
 </html>

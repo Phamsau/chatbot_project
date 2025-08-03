@@ -49,8 +49,9 @@ def luu_ngu_canh(question, answer, sources=None, MAX_QUESTIONS=5):
         "answer": answer,
         "sources": sources or []
     }
-
     return previous_answers
+
+    print(previous_answers)
 
 
 def xoa_ngucanh():
@@ -82,7 +83,7 @@ def xuli_doanvan_ngu_canh(user_input):
                 max_similarity = similarity
                 best_paragraph = paragraph
                 best_sources = sources
-    if max_similarity >= 0.55:
+    if max_similarity >= 0.60:
         return best_paragraph.strip(), best_sources
     else:
         return None, []

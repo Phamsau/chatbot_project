@@ -26,7 +26,7 @@ def chatbot_response(user_input):
     try:
         user_input = user_input.lower().strip()
         if not user_input:
-            return "Xin vui lòng cho biết yêu cầu của bạn"
+            return "Xin chào! Tôi là trợ lý P.SAUAI, Xin vui lòng cho biết yêu cầu của bạn"
 
         # Khởi tạo context nếu chưa có
         user_context.setdefault("history", [])
@@ -184,12 +184,12 @@ def main():
                     ct2 = bay(user_input)
                     print(ct1, ct2)
 
-                    if ct1 and ct2 and ct1 in tu_dien and ct1 in ct2:
+                    if ct1 and ct2:
+                        luu_ngu_canh(user_input, tu_dien[ct1])
                         chatgpt_output, updated_history, danh_tu_rieng_moi = capnhat(
                             user_input, tu_dien[ct1], history)
                         history = updated_history[-10:]
                         danh_tu_rieng_truoc_do = danh_tu_rieng_moi[-1] if danh_tu_rieng_moi else None
-                        luu_ngu_canh(user_input, chatgpt_output)
 
                     elif ct1 in danh_muc() and not ct2:
                         if ct1 == "ngày mấy":

@@ -165,6 +165,14 @@ def con_tro(text):
         time.sleep(0.005)
 
 
+def con_tro_1(text, delay=0.005):
+    result = ""
+    for char in text:
+        result += char
+        time.sleep(delay)
+    return result
+
+
 def hien_thi_vien_va_con_tro(text):
     vien_text = tao_duong_vien(text)
     for line in vien_text.split('\n'):

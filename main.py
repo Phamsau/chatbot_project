@@ -1,3 +1,5 @@
+from core.logic import tieptuc_traloi, capnhat
+from core.handle_input import sau, bay, tu_dien
 from flow_control import execute_command
 from module_ggl import (
     luu_ngu_canh,
@@ -11,35 +13,35 @@ from core.handle_input import sau, bay, tu_dien, ghi_dulieu_txt
 from core.logic import tieptuc_traloi, tach_tu_khoa, capnhat
 from ngu_canh_truy_van import tao_truy_van_bo_sung
 # Trạng thái phiên trò chuyện (session đơn giản trong bộ nhớ)
-user_context = {
-    "tiep": None,
-    "current_position": 99,
-    "dk": False,
-    "previous_answers": luu_ngu_canh("question", "answer")
-}
 
 
-user_context = {}
+def danh_muc():
+    return [
+        "ngày mấy", "mấy giờ rồi", "đặt phòng", "thời tiết", "danh từ",
+        "tính từ", "động từ", "xem ảnh", "thông dịch", "phiên dịch"
+    ]
 
 
-def chatbot_response(user_input):
+def chatbot_response(user_input, user_context):
     try:
         user_input = user_input.lower().strip()
         if not user_input:
-            return "Xin chào! Tôi là trợ lý P.SAUAI, Xin vui lòng cho biết yêu cầu của bạn"
+            xoa_ngucanh()
+            user_context.update({
+                "history": [],
+                "danh_tu_rieng_truoc_do": None,
+                "tiep": "",
+                "dk": False,
+                "current_position": 0
+            })
+            return "Xin chào! Tôi là trợ lý P.SAUAI, xin vui lòng cho biết yêu cầu của bạn."
 
-        # Khởi tạo context nếu chưa có
-        user_context.setdefault("history", [])
-        user_context.setdefault("danh_tu_rieng_truoc_do", None)
-
-        # Xóa ngữ cảnh
         if user_input == "xóa ngữ cảnh":
             xoa_ngucanh()
             user_context["history"].clear()
             user_context["danh_tu_rieng_truoc_do"] = None
             return "Ngữ cảnh đã được xóa."
 
-        # Tiếp tục đoạn văn
         if user_input == "tiếp tục" and user_context.get("dk"):
             tiep = user_context.get("tiep")
             pos = user_context.get("current_position", 0)
@@ -48,28 +50,29 @@ def chatbot_response(user_input):
                 return next_words or "Đã hết văn bản."
             return "Không có văn bản để trích xuất."
 
-        # Xử lý từ ngữ cảnh cũ
+        # Xử lý ngữ cảnh nếu có
         text, nguon = xuli_doanvan_ngu_canh(user_input)
-        user_response = None
         if text:
             user_response = tra_loi_tho(user_input, text)
-        if user_response:
-            chatgpt_output, updated_history, danh_tu_moi = capnhat(
-                user_input, user_response, user_context["history"], nguon)
-            user_context["history"] = updated_history[-10:]
-            if danh_tu_moi:
-                user_context["danh_tu_rieng_truoc_do"] = danh_tu_moi[-1]
-            return chatgpt_output
+            if user_response:
+                chatgpt_output, updated_history, danh_tu_moi = capnhat(
+                    user_input, user_response, user_context["history"], nguon
+                )
+                user_context["history"] = updated_history[-10:]
+                if danh_tu_moi:
+                    user_context["danh_tu_rieng_truoc_do"] = danh_tu_moi[-1]
+                return chatgpt_output
 
-        # Từ điển nội bộ
-        ct1 = sau(user_input)
+        # Kiểm tra từ điển nội bộ
+        ct1, nguon = sau(user_input)
         ct2 = bay(user_input)
 
         if ct1 and ct2:
             output = tu_dien.get(ct1)
-            luu_ngu_canh(user_input, output)
+            luu_ngu_canh(user_input, output, nguon)
             chatgpt_output, updated_history, danh_tu_moi = capnhat(
-                user_input, output, user_context["history"])
+                user_input, output, user_context["history"], nguon
+            )
             user_context["history"] = updated_history[-10:]
             if danh_tu_moi:
                 user_context["danh_tu_rieng_truoc_do"] = danh_tu_moi[-1]
@@ -82,31 +85,25 @@ def chatbot_response(user_input):
                 return f"Bây giờ là {datetime.now().strftime('%H:%M')}"
             return tu_dien.get(ct1)
 
-        # Cuối cùng, truy vấn Google
+        # Truy vấn Google nếu không có trong từ điển
         truy_van = tao_truy_van_bo_sung(
             user_input, user_context["danh_tu_rieng_truoc_do"])
         user_response, tiep, nguon = search_google(truy_van, user_input)
+
         user_context["tiep"] = tiep
         user_context["dk"] = True
         user_context["current_position"] = len(user_response.split())
 
         chatgpt_output, updated_history, danh_tu_moi = capnhat(
-            user_input, user_response, user_context["history"], nguon)
+            user_input, user_response, user_context["history"], nguon
+        )
         user_context["history"] = updated_history[-10:]
         if danh_tu_moi:
             user_context["danh_tu_rieng_truoc_do"] = danh_tu_moi[-1]
 
         return chatgpt_output
-
     except Exception as e:
         return f"Lỗi: {str(e)}"
-
-
-def danh_muc():
-    return [
-        "ngày mấy", "mấy giờ rồi", "đặt phòng", "thời tiết", "danh từ",
-        "tính từ", "động từ", "xem ảnh", "thông dịch", "phiên dịch"
-    ]
 
 
 def main():
@@ -162,6 +159,7 @@ def main():
                 chatgpt_output = "Xin vui lòng cho biết yêu cầu của bạn"
 
             else:
+
                 dk = False
                 user_input = user_input.lower().strip()
                 text, nguon = xuli_doanvan_ngu_canh(user_input)
@@ -179,15 +177,17 @@ def main():
                         user_input, best_related_answer, history, nguon)
                     history = updated_history[-10:]
                     danh_tu_rieng_truoc_do = danh_tu_rieng_moi[-1] if danh_tu_rieng_moi else None
+                    print("kết quả truy vấn: ", tao_truy_van_bo_sung(
+                        user_input, danh_tu_rieng_truoc_do))
                 else:
-                    ct1 = sau(user_input)
+                    ct1, nguon = sau(user_input)
                     ct2 = bay(user_input)
                     print(ct1, ct2)
 
                     if ct1 and ct2:
-                        luu_ngu_canh(user_input, tu_dien[ct1])
+                        luu_ngu_canh(user_input, tu_dien[ct1], nguon)
                         chatgpt_output, updated_history, danh_tu_rieng_moi = capnhat(
-                            user_input, tu_dien[ct1], history)
+                            user_input, tu_dien[ct1], history, nguon)
                         history = updated_history[-10:]
                         danh_tu_rieng_truoc_do = danh_tu_rieng_moi[-1] if danh_tu_rieng_moi else None
 

@@ -36,7 +36,9 @@ def sau(user_input):
             if normalized_question in user_input:
                 matched_questions.append(question)
     if matched_questions:
-        return random.choice(matched_questions)
+        return random.choice(matched_questions), ["Theo nguồn tin riêng"]
+    else:
+        return None, None
 
 
 def bay(user_input):

@@ -25,8 +25,8 @@ def lam_dep_cau_tra_loi_groq(cau_hoi, noi_dung_tham_khao, ngu_canh=None):
 
     messages = [
         {"role": "system", "content": (
-            "Bạn là một trợ lý AI tiếng Việt đáng tin cậy. "
-            "Chỉ trả lời dựa trên thông tin có thật. "
+            "Bạn là một trợ lý AI tiếng Việt đáng tin cậy và vui vẻ."
+            "Câu trả lời phải luôn bằng tiếng Việt"
             "Không bịa chuyện và không xin lỗi khi không cần thiết."
         )}
     ] + ngu_canh
@@ -40,7 +40,7 @@ def lam_dep_cau_tra_loi_groq(cau_hoi, noi_dung_tham_khao, ngu_canh=None):
         "role": "user",
         "content": (
             "Viết lại câu trả lời mạch lạc, rõ ràng, thân thiện, chính xác và phải trích nguồn nếu có"
-            "yêu cầu: Tên nhân vật phải đủ thông tin mới nêu, không gán ghép, không được đoán hay bịa đặt tên nhân vật khi thông tin không rõ ràng. "
+            "yêu cầu: dựa vào content từ user và assistant để trả lời."
             "Cuối cùng, nhất định phải ghi rõ dòng sau:\n"
             "[DANH_TU_RIENG: tên đầy đủ hoặc chủ đề chính mà người dùng đang đề cập nếu có]"
         )

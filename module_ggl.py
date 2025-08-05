@@ -10,7 +10,6 @@ import re
 import time
 from functools import lru_cache
 from keyword_expander import tach_tu_khoa, loc_tu_quan_trong, expand_keywords, clean_text
-import itertools
 previous_answers = {}
 
 
@@ -49,9 +48,8 @@ def luu_ngu_canh(question, answer, sources=None, MAX_QUESTIONS=5):
         "answer": answer,
         "sources": sources or []
     }
-    return previous_answers
-
     print(previous_answers)
+    return previous_answers
 
 
 def xoa_ngucanh():

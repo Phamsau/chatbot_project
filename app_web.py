@@ -22,7 +22,6 @@ def chat():
     context = get_user_context(user_id)
     reply = chatbot_response(message, context)
     update_user_context(user_id, context)
-
     return jsonify({"reply": reply})
 
 

@@ -9,7 +9,7 @@ import re
 import time
 from functools import lru_cache
 from keyword_expander import tach_tu_khoa, loc_tu_quan_trong, expand_keywords, clean_text
-previous_answers = {}
+# Lấy từ context truyền vào
 
 
 def capitalize_first_letter(paragraph):
@@ -35,10 +35,10 @@ def find_keyword_positions2(text, keywords):
     return sorted(positions)
 
 
-previous_answers = {}
+def luu_ngu_canh(question, answer, sources=None, context=None, MAX_QUESTIONS=5):
+    if context is None:
+        return
 
-
-def luu_ngu_canh(context, question, answer, sources=None, MAX_QUESTIONS=5):
     previous_answers = context.get("previous_answers", {})
 
     if len(previous_answers) >= MAX_QUESTIONS:
@@ -51,7 +51,6 @@ def luu_ngu_canh(context, question, answer, sources=None, MAX_QUESTIONS=5):
     }
 
     context["previous_answers"] = previous_answers
-    return previous_answers
 
 
 def xoa_ngucanh(context):
@@ -197,7 +196,7 @@ def search_google(keyword, user_input, context, num_of_results=5, max_sources=2,
 
         if text.strip():
             try:
-                luu_ngu_canh(context, keyword, text)
+                luu_ngu_canh(keyword, text, context=context)
             except:
                 pass
         # Giới hạn số từ
@@ -417,7 +416,7 @@ def traloi_theo_ngucanh2_1(user_input, text, k=0.75):
         best_related_answers = [
             ans for ans, c in all_related_answers if c >= max_matched - 1
         ]
-    print(best_related_answers)
+    # print(best_related_answers)
     # Gom nhóm câu tương tự
     groups = []
     for ans in best_related_answers:

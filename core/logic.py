@@ -38,6 +38,7 @@ def capnhat(user_input, user_response, history, sources=None):
             {"role": "user", "content": user_input},
             {"role": "assistant", "content": chatgpt_output}
         ]
+        print("history: ", history)
     else:
         chatgpt_output = f"Xin lỗi, tôi không tìm thấy thông tin cho: {user_input}"
         danh_tu_rieng = []

@@ -14,6 +14,7 @@ def get_user_context(user_id):
     GLOBAL_CONTEXTS[user_id] = {
         "context": {
             "history": [],
+            "previous_answers": {},  # 👈 Quan trọng
             "danh_tu_rieng_truoc_do": None,
             "tiep": "",
             "dk": False,

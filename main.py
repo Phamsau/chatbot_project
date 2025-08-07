@@ -29,7 +29,8 @@ def chatbot_response(user_input, user_context):
                 "danh_tu_rieng_truoc_do": None,
                 "tiep": "",
                 "dk": False,
-                "current_position": 0
+                "current_position": 0,
+                "previous_answers": {}
             })
             return "Xin chào! Tôi là trợ lý P.SAUAI, xin vui lòng cho biết yêu cầu của bạn."
 
@@ -66,7 +67,7 @@ def chatbot_response(user_input, user_context):
 
         if ct1 and ct2:
             output = tu_dien.get(ct1)
-            luu_ngu_canh(user_context, user_input, output, nguon)
+            luu_ngu_canh(user_input, output, nguon, context=user_context)
             chatgpt_output, updated_history, danh_tu_moi = capnhat(
                 user_input, output, user_context["history"], nguon
             )

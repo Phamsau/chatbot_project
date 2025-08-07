@@ -4,12 +4,12 @@ import re
 
 # Danh sách đại từ mở rộng (ưu tiên cụm dài hơn trước)
 DAI_TU_CHI_NGUOI = [
-    "ông ấy", "bà ấy", "cô ấy", "cậu ấy", "anh ta", "chị ta", "anh ấy",
+    "ông ấy", "bà ấy", "cô ấy", "cậu ấy", "chị ấy", "anh ta", "chị ta", "anh ấy",
     "người ấy", "họ", "ông ta", "bà ta", "vị đó", "nhân vật đó", "ổng", "bả", "ảnh", "chỉ", "hắn", "hắn ta"
 ]
 
 DAI_TU_CHI_DIA_DANH = [
-    "nơi đó", "vùng đó", "khu vực đó", "thành phố đó", "quốc gia đó", "địa điểm đó", "tỉnh đó", "chổ đó", "ở đó", "tại đó", "chổ ấy", "nơi ấy"
+    "nơi đó", "vùng đó", "khu vực đó", "thành phố đó", "quốc gia đó", "địa điểm đó", "tỉnh đó", "chổ đó", "ở đó", "tại đó", "chổ ấy", "nơi ấy", "chổ đó"
 ]
 
 DAI_TU_KHONG_PHAN = [
@@ -17,13 +17,17 @@ DAI_TU_KHONG_PHAN = [
     "con đó", "cái đó", "cái ấy", "chuyện ấy", "nó là", "hành động đó", "điều đó", "trường hợp đó"
 ]
 
+# Danh sách đại từ mở rộng (ưu tiên cụm dài hơn trước)
+DAI_TU_DAI_DIEN = sorted(set(DAI_TU_CHI_NGUOI + DAI_TU_CHI_DIA_DANH + DAI_TU_KHONG_PHAN
+                             ), key=lambda x: -len(x))
+
 
 def tao_truy_van_bo_sung(user_input: str, danh_tu_rieng_truoc_do: str = None, loai_thuc_the: str = "nguoi") -> str:
     if not danh_tu_rieng_truoc_do:
         return user_input.strip()
 
     if loai_thuc_the == "nguoi":
-        tu_dai_dien = DAI_TU_CHI_NGUOI
+        tu_dai_dien = DAI_TU_DAI_DIEN
     elif loai_thuc_the == "diadanh":
         tu_dai_dien = DAI_TU_CHI_DIA_DANH
     else:

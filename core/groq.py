@@ -35,7 +35,7 @@ def lam_dep_cau_tra_loi_groq(cau_hoi, noi_dung_tham_khao, ngu_canh=None):
         messages.append({"role": "user", "content": cau_hoi})
     if noi_dung_tham_khao:
         messages.append({"role": "assistant", "content": noi_dung_tham_khao})
-
+    print(messages)
     messages.append({
         "role": "user",
         "content": (

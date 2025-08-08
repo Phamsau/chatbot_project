@@ -18,6 +18,7 @@
       max-width: 900px;
       margin: 0 auto;
       background: white;
+      position: relative;
     }
     header {
       background: #4CAF50;
@@ -25,6 +26,16 @@
       padding: 16px;
       text-align: center;
       font-size: 1.2rem;
+    }
+    .user-id {
+      position: absolute;
+      top: 5px;
+      right: 10px;
+      font-size: 0.7rem;
+      color: yellow;
+      background: rgba(0,0,0,0.4);
+      padding: 2px 6px;
+      border-radius: 4px;
     }
     .chatbox {
       flex: 1;
@@ -77,86 +88,86 @@
     }
 
     @media (max-width: 600px) {
-      .container {
-        height: 100vh;
-      }
-      header {
-        font-size: 1rem;
-        padding: 12px;
-      }
-      #send-btn, #user-input {
-        font-size: 0.9rem;
-        padding: 8px;
-      }
-      .user-msg, .bot-msg {
-        max-width: 100%;
-      }
+      .container { height: 100vh; }
+      header { font-size: 1rem; padding: 12px; }
+      #send-btn, #user-input { font-size: 0.9rem; padding: 8px; }
+      .user-msg, .bot-msg { max-width: 100%; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <header>CHÁT VỚI PSAUAI</header>
+    <div id="user-id" class="user-id"></div>
     <div id="chatbox" class="chatbox"></div>
     <div class="input-area">
       <input type="text" id="user-input" placeholder="Nhập yêu cầu..." autofocus>
       <button id="send-btn">Gửi</button>
     </div>
   </div>
+<script>
+  const chatbox = document.getElementById("chatbox");
+  const userInput = document.getElementById("user-input");
+  const sendBtn = document.getElementById("send-btn");
+  const userIdDisplay = document.getElementById("user-id");
 
-  <script>
-    const chatbox = document.getElementById("chatbox");
-    const userInput = document.getElementById("user-input");
-    const sendBtn = document.getElementById("send-btn");
+  // 🔐 Tạo và lưu user_id vào localStorage
+  if (!localStorage.getItem("user_id")) {
+    localStorage.setItem("user_id", crypto.randomUUID());
+  }
+  const user_id = localStorage.getItem("user_id");
 
-    function addMessage(text, cls) {
-      const div = document.createElement("div");
-      div.className = cls;
-      div.innerText = text;
-      chatbox.appendChild(div);
-      chatbox.scrollTop = chatbox.scrollHeight;
-      return div;
-    }
+  // Hiển thị user_id lên UI
+  userIdDisplay.textContent = `ID: ${user_id}`;
 
-    async function sendMessage() {
-      const msg = userInput.value.trim();
-      if (!msg) return;
+  function addMessage(text, cls) {
+    const div = document.createElement("div");
+    div.className = cls;
+    div.innerText = text;
+    chatbox.appendChild(div);
+    chatbox.scrollTop = chatbox.scrollHeight;
+    return div;
+  }
 
-      addMessage(msg, "user-msg");
-      const botDiv = addMessage("Đang xử lý...", "bot-msg");
-      userInput.value = "";
+  async function sendMessage() {
+    const msg = userInput.value.trim();
+    if (!msg) return;
 
-      try {
-        const res = await fetch("/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: msg })
-        });
-        const data = await res.json();
-        botDiv.innerText = data.reply;
-      } catch (err) {
-        botDiv.innerText = "Lỗi khi gửi yêu cầu.";
-        console.error("Lỗi gửi:", err);
-      }
-    }
+    addMessage(msg, "user-msg");
+    const botDiv = addMessage("Đang xử lý...", "bot-msg");
+    userInput.value = "";
 
-    sendBtn.addEventListener("click", sendMessage);
-    userInput.addEventListener("keypress", e => {
-      if (e.key === "Enter") sendMessage();
-    });
-
-    // Gửi lời chào khi trang load
-    window.onload = () => {
-      fetch("/chat", {
+    try {
+      const res = await fetch("/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: "" })
-      })
-      .then(res => res.json())
-      .then(data => {
-        addMessage(data.reply, "bot-msg");
+        body: JSON.stringify({ message: msg, user_id })
       });
-    };
-  </script>
+      const data = await res.json();
+      botDiv.innerText = data.reply;
+    } catch (err) {
+      botDiv.innerText = "Lỗi khi gửi yêu cầu.";
+      console.error("Lỗi gửi:", err);
+    }
+  }
+
+  sendBtn.addEventListener("click", sendMessage);
+  userInput.addEventListener("keypress", e => {
+    if (e.key === "Enter") sendMessage();
+  });
+
+  // 👋 Gửi lời chào khi trang load
+  window.onload = () => {
+    fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "", user_id })
+    })
+    .then(res => res.json())
+    .then(data => {
+      addMessage(data.reply, "bot-msg");
+    });
+  };
+</script>
 </body>
 </html>

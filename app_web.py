@@ -13,15 +13,19 @@ def index():
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.get_json()
-    # Ưu tiên client gửi user_id
-    user_id = data.get("user_id") or request.remote_addr
+    user_id = data.get("user_id")
+    print(f"📌 Nhận user_id: {user_id}")  # Debug server
+
+    if not user_id:
+        return jsonify({"reply": "Không nhận diện được người dùng."}), 400
+
     message = data.get("message", "")
 
-    # Xử lý context
     cleanup_old_contexts()
     context = get_user_context(user_id)
     reply = chatbot_response(message, context)
     update_user_context(user_id, context)
+
     return jsonify({"reply": reply})
 
 

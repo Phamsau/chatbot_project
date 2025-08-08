@@ -15,7 +15,7 @@ from ngu_canh_truy_van import tao_truy_van_bo_sung
 def danh_muc():
     return [
         "ngày mấy", "mấy giờ rồi", "đặt phòng", "thời tiết", "danh từ",
-        "tính từ", "động từ", "xem ảnh", "thông dịch", "phiên dịch"
+        "ai tạo ra bạn", "phạm sáu", "ai là người đã tạo ra bạn", "thông dịch", "phiên dịch"
     ]
 
 

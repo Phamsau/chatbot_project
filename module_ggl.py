@@ -123,6 +123,13 @@ def is_valid_paragraph(text):
     return False
 
 
+def safe_get(url, timeout=10):
+    try:
+        return requests.get(url, timeout=timeout, verify=True)
+    except requests.exceptions.SSLError:
+        return requests.get(url, timeout=timeout, verify=False)
+
+
 def search_google(keyword, user_input, context, num_of_results=5, max_sources=2, max_words=200):
 
     # Lọc ra từ khóa quan trọng
@@ -143,7 +150,8 @@ def search_google(keyword, user_input, context, num_of_results=5, max_sources=2,
                 continue
 
             try:
-                response = requests.get(first_link, timeout=10, verify=False)
+                response = safe_get(first_link)
+
                 time.sleep(random.uniform(0.3, 0.5))  # Sleep để tránh bị chặn
 
                 soup = BeautifulSoup(response.content, 'html.parser')

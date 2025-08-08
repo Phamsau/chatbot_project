@@ -71,8 +71,8 @@ bóng đá|bóng đá là một môn thể thao
 bạn nghe nhầm|Xin lỗi bạn có thể hỏi lại câu hỏi không ạ
 duy xuyên|Duy Xuyên là một huyện thuộc tỉnh Quảng Nam
 duy sơn|Duy Sơn là một xã miền núi thuộc huyện Duy Xuyên tỉnh Quảng Nam
-bán ở đâu|Tôi không biết bán ở đâu
-ảnh đẹp|ok
+ai tạo ra bạn|Ông Phạm Sáu đã tạo ra tôi, tôi được tích hợp mô hình LLAMA để trả lời.
+ông phạm sáu|Ông Phạm Sáu là kỹ sư xây dựng học tại trường đai học BKTPHCM, hiện nay sống ở Quảng Ngãi. Tuy là ksxd nhưng ông ấy đam mê về CNTT, ông đã tự viết nhiều chương trình phần mềm bằng ngôn ngữ Python.
 đi đâu đó|đi chơi
 thuê khách sạn|Ok, mời bạn bắt đầu đăng ký đặt phòng.
 đặt phòng|Ok, mời bạn bắt đầu đăng ký đặt phòng.

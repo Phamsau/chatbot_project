@@ -186,7 +186,7 @@ def search_google(keyword, user_input, context, num_of_results=5, max_sources=2,
         # print("đoạn văn sau khi xử lý và lưu: ", all_text, len(all_text))
         # Thêm hàm xử lý văn bản nếu có
         try:
-            all_text = xuly_vanban_google(context, keyword, all_text)
+            all_text = xuly_vanban_google(keyword, all_text)
 
         except:
             pass  # Nếu không có hàm này thì bỏ qua

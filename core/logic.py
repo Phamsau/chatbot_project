@@ -3,24 +3,6 @@ from core.groq import lam_dep_cau_tra_loi_groq
 # Giả định previous_answers được khởi tạo trong chatchinh.py và truyền vào nếu cần
 
 
-def tach_tu_khoa(text):
-    # Tách các từ từ văn bản
-    words = text.split()
-    # Loại bỏ các từ không cần thiết hoặc stop-words
-    loai_bo = ["gì", "nào", "ai", "sao", "à", "và", "là", "các", "của",
-
-               "ấy", "thì", "ở", "đâu", "vì", "ra", "nó", "nhưng", "những", "hả", "sẽ", "mấy"]
-    cum_tu_khoa = [word.lower().rstrip(',.?!')
-                   for word in words if word.lower().rstrip(',.?!') not in loai_bo]  # Loại bỏ dấu ',' và '.'
-    if cum_tu_khoa == []:
-        cum_tu_khoa = [word.lower()
-                       for word in words if word.lower()]
-
-        return cum_tu_khoa
-
-    return cum_tu_khoa
-
-
 def capnhat(user_input, user_response, history, sources=None):
     """Cập nhật đoạn hội thoại + xử lý câu trả lời sao cho đẹp, có trích nguồn"""
     if user_response:
@@ -30,7 +12,7 @@ def capnhat(user_input, user_response, history, sources=None):
         else:
             noi_dung_tham_khao = user_response
 
-        chatgpt_output, danh_tu_rieng = lam_dep_cau_tra_loi_groq(
+        chatgpt_output = lam_dep_cau_tra_loi_groq(
             user_input, noi_dung_tham_khao, history
         )
 
@@ -38,12 +20,10 @@ def capnhat(user_input, user_response, history, sources=None):
             {"role": "user", "content": user_input},
             {"role": "assistant", "content": chatgpt_output}
         ]
-        # print("history: ", history)
     else:
         chatgpt_output = f"Xin lỗi, tôi không tìm thấy thông tin cho: {user_input}"
-        danh_tu_rieng = []
 
-    return chatgpt_output, history, danh_tu_rieng
+    return chatgpt_output, history
 
 
 def tieptuc_traloi(all_text, current_position):

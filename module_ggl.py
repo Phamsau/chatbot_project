@@ -133,8 +133,7 @@ def safe_get(url, timeout=10):
 def search_google(keyword, user_input, context, num_of_results=5, max_sources=2, max_words=200):
 
     # Lọc ra từ khóa quan trọng
-    keyword = " ".join(loc_tu_quan_trong(keyword))
-    print(f"[🔍 Truy vấn Google sau lọc]: {keyword}")
+    keyword1 = " ".join(loc_tu_quan_trong(keyword))
 
     try:
         search_results = search(keyword, num_results=num_of_results, lang='vi')
@@ -163,7 +162,7 @@ def search_google(keyword, user_input, context, num_of_results=5, max_sources=2,
                 # Lấy các đoạn văn <p>, thêm separator để không dính chữ
                 paragraphs = [
                     p.get_text(separator=" ", strip=True)
-                    for p in soup.find_all(['p', 'li'])
+                    for p in soup.find_all(['p', 'div'])
                     if is_valid_paragraph(p.get_text(strip=True))
                 ]
 
@@ -210,13 +209,17 @@ def search_google(keyword, user_input, context, num_of_results=5, max_sources=2,
         # Giới hạn số từ
         words = all_text.split()
         if len(words) > max_words:
-            extended_words = words[:max_words]
-            # Tiếp tục thêm từ cho đến khi gặp dấu chấm
-            for word in words[max_words:]:
-                extended_words.append(word)
-                if word.endswith('.'):
-                    break
-            doan_dau = ' '.join(extended_words)
+            doan_dau_text = tra_loi_tho(user_input, text)
+            if doan_dau_text:
+                doan_dau = doan_dau_text
+            else:
+                extended_words = words[:max_words]
+                # Tiếp tục thêm từ cho đến khi gặp dấu chấm
+                for word in words[max_words:]:
+                    extended_words.append(word)
+                    if word.endswith('.'):
+                        break
+                doan_dau = ' '.join(extended_words)
         else:
             return text, text, used_urls
         if all_text.strip():

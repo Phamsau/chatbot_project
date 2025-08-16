@@ -1,8 +1,8 @@
 import re
 # Stopwords để loại bỏ từ khóa nhiễu
 STOPWORDS = {
-    "gì", "nào", "ai", "sao", "à", "và", "các", "của", "là",
-    "ấy", "thì", "ở", "đâu", "ra", "nó", "nhưng", "những", "hả", "sẽ", "mấy"
+    "gì", "nào", "ai", "sao", "à", "và", "các",
+    "ấy", "thì", "đâu", "ra", "nó", "nhưng", "những", "hả", "sẽ", "mấy"
 }
 STOP_PHRASES = [
     "bao nhiêu", "như thế nào", "làm sao", "ở đâu", "khi nào", "là gì", "tại sao", "vì sao", "tại vì sao",
